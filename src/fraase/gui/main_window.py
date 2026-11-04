@@ -1,57 +1,57 @@
 from __future__ import annotations
 
+from enum import IntEnum
+
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QLabel, QMainWindow, QStackedWidget, QWidget
 
 from fraase import __version__
+from fraase.gui.pages.docs_page import DocsPage
 from fraase.gui.pages.home_page import HomePage
 from fraase.gui.pages.new_project_page import NewProjectPage
 from fraase.gui.state import AppState
 
 
+class PageID(IntEnum):
+    """Enumeration of page indices/IDs."""
+
+    HOME = 0
+    NEW_PROJECT = 1
+    DOCS = 2
+
+
 class MainWindow(QMainWindow):
     """Primary desktop window for FRAASE."""
-
-    PAGE_HOME = 0
-    PAGE_NEW_PROJECT = 1
 
     def __init__(self, state: AppState) -> None:
         super().__init__()
         self.showMaximized()  # Fit to fullscreen
         self.setWindowTitle("FRAASE")
 
-        # The state can be passed of to other pages/services that need to be aware of what model we're using,
-        # what project is active, etc
         self.state = state
-        self.build_ui()
 
-    def build_ui(self) -> None:
-        """Build the main UI components (central widgets, menus, etc)."""
         self.build_menu_bar()
+        self.page_stack = QStackedWidget()  # The page stack will hold all of the different pages
+        self.setCentralWidget(self.page_stack)
+        self.build_status_bar()
 
-        # Make a central container that will occupy the central widget of the main window
-        # All pages and central UI stuff will inherent from this widget
-        self.central_container = QWidget()
-        self.setCentralWidget(self.central_container)
-
-        # The page stack will hold all of the different pages
-        self.page_stack = QStackedWidget(self.central_container)
-
+    def build_pages(self) -> None:
+        """Build all of the necessary pages."""
         self.home_page = HomePage()
         self.new_project_page = NewProjectPage(state=self.state)
+        self.docs_page = DocsPage()
 
         # Dictionary holding the page index and page widget.
         # Useful for self.navigate_to(page_id)
-        self.page_widgets: dict[int, QWidget] = {
-            self.PAGE_HOME: self.home_page,
-            self.PAGE_NEW_PROJECT: self.new_project_page,
+        self.page_widgets: dict[PageID, QWidget] = {
+            PageID.HOME: self.home_page,
+            PageID.NEW_PROJECT: self.new_project_page,
+            PageID.DOCS: self.docs_page,
         }
 
         # Add all of the pages to the home stack
         for widget in self.page_widgets.values():
             self.page_stack.addWidget(widget)
-
-        self.build_status_bar()
 
     def build_menu_bar(self) -> None:
         """Build the top menu bar of the application."""
