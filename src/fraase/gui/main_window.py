@@ -30,13 +30,16 @@ class MainWindow(QMainWindow):
 
         self.state = state
 
+        self.build_pages()
         self.build_menu_bar()
-        self.page_stack = QStackedWidget()  # The page stack will hold all of the different pages
-        self.setCentralWidget(self.page_stack)
         self.build_status_bar()
 
     def build_pages(self) -> None:
         """Build all of the necessary pages."""
+        # The page stack will hold all of the different pages
+        self.page_stack = QStackedWidget()
+        self.setCentralWidget(self.page_stack)
+
         self.home_page = HomePage()
         self.new_project_page = NewProjectPage(state=self.state)
         self.docs_page = DocsPage()
@@ -80,7 +83,7 @@ class MainWindow(QMainWindow):
         version_label = QLabel(text=f"FRAASE v{__version__}")
         self.statusBar().addPermanentWidget(version_label)
 
-    def navigate_to(self, page_id: int) -> None:
+    def navigate_to(self, page_id: PageID) -> None:
         """Navigate to a page."""
         dst: QWidget | None = self.page_widgets.get(page_id)
         if dst is not None:
@@ -91,4 +94,4 @@ class MainWindow(QMainWindow):
     def on_new_project(self) -> None:
         """Close current project, navigate to the new case project page."""
         self.state.close_project()
-        self.navigate_to(self.PAGE_NEW_PROJECT)
+        self.navigate_to(PageID.NEW_PROJECT)
