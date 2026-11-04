@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         self.page_stack = QStackedWidget(self.central_container)
 
         self.home_page = HomePage()
-        self.new_project_page = NewProjectPage()
+        self.new_project_page = NewProjectPage(state=self.state)
 
         # Dictionary holding the page index and page widget.
         # Useful for self.navigate_to(page_id)
@@ -56,6 +56,9 @@ class MainWindow(QMainWindow):
     def build_menu_bar(self) -> None:
         """Build the top menu bar of the application."""
         self.menuBar().setNativeMenuBar(False)  # This is needed to display the menu bar; not sure why
+
+        # Home menu
+        self.home_menu = self.menuBar().addMenu("&Home")
 
         # File menu
         self.file_menu = self.menuBar().addMenu("&File")
