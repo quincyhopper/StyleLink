@@ -58,7 +58,9 @@ class MainWindow(QMainWindow):
 
     def build_menu_bar(self) -> None:
         """Build the top menu bar of the application."""
-        self.menuBar().setNativeMenuBar(False)  # This is needed to display the menu bar; not sure why
+        # Qt uses the macOS native menu bar by defualt. To render the menu bar in the application
+        # itself, we have to disable this
+        self.menuBar().setNativeMenuBar(False)
 
         # Home menu
         self.home_menu = self.menuBar().addMenu("&Home")
