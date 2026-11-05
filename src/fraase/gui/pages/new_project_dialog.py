@@ -49,6 +49,7 @@ class NewProjectDialog(QDialog):
         # Project name
         self.project_name = QLineEdit()
         self.project_name.setPlaceholderText("Choose a name for the new project")
+        self.project_name.textChanged.connect(self.validate_form)
         form.addRow("New project name:", self.project_name)
 
         # Importing
@@ -81,13 +82,21 @@ class NewProjectDialog(QDialog):
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(self.on_cancel_btn_clicked)
 
-        create_btn = QPushButton("Create Project")
-        create_btn.clicked.connect(self.on_create_btn_clicked)
-        create_btn.setProperty("primary", True)
+        self.create_btn = QPushButton("Create Project")
+        self.create_btn.clicked.connect(self.on_create_btn_clicked)
+        self.create_btn.setProperty("primary", True)
+        self.create_btn.setEnabled(False)
 
         final_btn_layout.addWidget(cancel_btn)
-        final_btn_layout.addWidget(create_btn)
+        final_btn_layout.addWidget(self.create_btn)
         layout.addLayout(final_btn_layout)
+
+    def validate_form(self) -> None:
+        """Enable Create Project button only when project name and file are valid."""
+        has_name = bool(self.project_name.text().strip())
+        has_file = bool(self.file_name.text().strip())
+
+        self.create_btn.setEnabled(has_name and has_file)
 
     @Slot()
     def on_choose_file_btn(self) -> None:
@@ -106,6 +115,7 @@ class NewProjectDialog(QDialog):
 
             # Update forms with selected file
             self.file_name.setText(str(path))
+            self.validate_form()
 
     @Slot()
     def on_cancel_btn_clicked(self) -> None:
@@ -115,7 +125,6 @@ class NewProjectDialog(QDialog):
     @Slot()
     def on_create_btn_clicked(self) -> None:
         """Create new project given the inputs."""
-        # TODO: probably need to make sure that this can't be pressed unless a file has been chosen
         new_project = Project(project_name=self.project_name)
         self.state.open_project(new_project.dir)
 
