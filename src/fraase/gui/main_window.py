@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from pathlib import Path
 
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QLabel, QMainWindow, QStackedWidget, QWidget
@@ -10,6 +11,8 @@ from fraase.gui.pages.docs_page import DocsPage
 from fraase.gui.pages.home_page import HomePage
 from fraase.gui.pages.new_project_page import NewProjectPage
 from fraase.gui.state import AppState
+
+MENUBAR_STYLESHEET_PATH = Path(__file__).parent / "static" / "styles" / "menu_bar.qss"
 
 
 class PageID(IntEnum):
@@ -62,6 +65,9 @@ class MainWindow(QMainWindow):
         # itself, we have to disable this
         self.menuBar().setNativeMenuBar(False)
 
+        with MENUBAR_STYLESHEET_PATH.open() as file:
+            self.menuBar().setStyleSheet(file.read())
+
         # Home menu
         self.home_menu = self.menuBar().addMenu("&Home")
 
@@ -74,11 +80,15 @@ class MainWindow(QMainWindow):
         save_project_action = self.file_menu.addAction("Save")
         saveas_project_action = self.file_menu.addAction("Save as")
 
+        # Docs menu
+        self.docs_menu = self.menuBar().addMenu("&Docs")
+
         # Add connections
         new_project_action.triggered.connect(self.on_new_project)
         # open_project_action.triggered.connect()
         # save_project_action.triggered.connect()
         # saveas_project_action.triggered.connect()
+        # self.docs_menu.triggered.connect()
 
     def build_status_bar(self) -> None:
         """Build the status bar responsible for indicating the current project and any other details."""

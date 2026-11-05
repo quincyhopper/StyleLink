@@ -1,0 +1,24 @@
+QMenuBar {
+    background-color: white;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 6px 12px;
+    spacing: 8px;
+}
+
+QMenuBar::item {
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+QMenuBar::item:selected {
+    background-color: #f0f0f0;
+}
+
+QMenuBar::item:pressed {
+    background-color: #e5e5e5;
+}
+
+QMenuBar::item::hover {
+    background-color: white;
+}
