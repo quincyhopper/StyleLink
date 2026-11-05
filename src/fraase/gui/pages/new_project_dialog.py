@@ -39,13 +39,12 @@ class NewProjectDialog(QDialog):
         """Build the apperance of this dialog."""
         # Set the main layout for the dialog
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(40, 28, 40, 28)
-        layout.setSpacing(18)
         self.setMinimumSize(600, 400)
 
         # Form layout will hold Project Name and Import fields
         form = QFormLayout()
         layout.addLayout(form)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)  # use full width
 
         # Project name
         self.project_name = QLineEdit()
@@ -56,7 +55,7 @@ class NewProjectDialog(QDialog):
         file_row = QHBoxLayout()
         self.file_name = QLineEdit()
         self.file_name.setReadOnly(True)
-        self.file_name.setPlaceholderText("Select a file to import")
+        self.file_name.setPlaceholderText("Select a .csv, .tsv, or .xlsx dataset file to import...")
         file_row.addWidget(self.file_name)
 
         # Button for importing a file
