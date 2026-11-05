@@ -45,6 +45,7 @@ class NewProjectDialog(QDialog):
 
         # Form layout will hold Project Name and Import fields
         form = QFormLayout()
+        layout.addLayout(form)
 
         # Project name
         self.project_name = QLineEdit()
@@ -63,9 +64,6 @@ class NewProjectDialog(QDialog):
         choose_file_btn.clicked.connect(self.on_choose_file_btn)
         file_row.addWidget(choose_file_btn)
         form.addRow("Import:", file_row)  # Add everything to form
-
-        # Add the form to the main layout
-        layout.addLayout(form)
 
         # Add a separation line in betwen the form and the file preview
         line = QFrame()
