@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QStackedWidget, QWidget
 from fraase import __version__
 from fraase.gui.pages.docs_page import DocsPage
 from fraase.gui.pages.home_page import HomePage
-from fraase.gui.pages.new_project_page import NewProjectPage
+from fraase.gui.pages.new_project_dialog import NewProjectDialog
 from fraase.gui.state import AppState
 
 MENUBAR_STYLESHEET_PATH = Path(__file__).parent / "static" / "styles" / "menu_bar.qss"
@@ -19,8 +19,7 @@ class PageID(IntEnum):
     """Enumeration of page indices/IDs."""
 
     HOME = 0
-    NEW_PROJECT = 1
-    DOCS = 2
+    DOCS = 1
 
 
 class MainWindow(QMainWindow):
@@ -44,14 +43,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.page_stack)
 
         self.home_page = HomePage()
-        self.new_project_page = NewProjectPage(state=self.state)
         self.docs_page = DocsPage()
 
         # Dictionary holding the page index and page widget.
         # Useful for self.navigate_to(page_id)
         self.page_widgets: dict[PageID, QWidget] = {
             PageID.HOME: self.home_page,
-            PageID.NEW_PROJECT: self.new_project_page,
             PageID.DOCS: self.docs_page,
         }
 
@@ -75,10 +72,10 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu("&File")
         new_project_action = self.file_menu.addAction("New Project")
         self.file_menu.addSeparator()
-        open_project_action = self.file_menu.addAction("Open")
+        # open_project_action = self.file_menu.addAction("Open")
         self.file_menu.addSeparator()
-        save_project_action = self.file_menu.addAction("Save")
-        saveas_project_action = self.file_menu.addAction("Save as")
+        # save_project_action = self.file_menu.addAction("Save")
+        # saveas_project_action = self.file_menu.addAction("Save as")
 
         # Docs menu
         self.docs_menu = self.menuBar().addMenu("&Docs")
@@ -105,5 +102,5 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_new_project(self) -> None:
         """Close current project, navigate to the new case project page."""
-        self.state.close_project()
-        self.navigate_to(PageID.NEW_PROJECT)
+        dialog = NewProjectDialog(state=self.state)
+        dialog.exec()

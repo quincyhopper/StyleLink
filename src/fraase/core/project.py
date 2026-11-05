@@ -1,4 +1,5 @@
 class Project:
     """Manage a project directory."""
 
-    pass
+    def __init__(self, project_name: str):
+        pass
