@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
 
 from fraase.core.project import Project
 from fraase.gui.state import AppState
-from fraase.utils.file import preview_file
+from fraase.utils.file import preview_file, read_file
 
 
 class NewProjectDialog(QDialog):
@@ -130,7 +130,10 @@ class NewProjectDialog(QDialog):
 
         # Create the project
         source_file = Path(self.file_name.text())
-        Project.create(project_dir=project_dir, source_file=source_file)
+        project = Project.create(project_dir=project_dir)
+
+        # Populate database
+        project.database.add_documents(read_file(source_file))
 
         # Set the active project to the new project
         self.state.open_project(project_dir=project_dir)
