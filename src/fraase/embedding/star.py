@@ -78,11 +78,11 @@ class STAR:
         from transformers import AutoModel, AutoTokenizer
 
         self._tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.tokenizer_path, local_files_only=True, device=self.device
-        )
+            pretrained_model_name_or_path=self.tokenizer_path, local_files_only=True
+        ).to(self.device)
 
-        self._model = AutoModel.from_pretrained(
-            pretrained_model_name_or_path=self.tokenizer_path, local_files_only=True, device=self.device
+        self._model = AutoModel.from_pretrained(pretrained_model_name_or_path=self._model, local_files_only=True).to(
+            self.device
         )
 
         self._model.eval()
