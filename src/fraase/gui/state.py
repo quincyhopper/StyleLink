@@ -41,4 +41,7 @@ class AppState(QObject):
         """Close the active project."""
         if self.active_project:
             # Close the case
-            pass
+            self.active_project.database.close()
+
+        self.active_project = None
+        self.project_changed.emit(None)
