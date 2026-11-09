@@ -45,8 +45,8 @@ class HomePage(QStackedWidget):
         search_btn = QPushButton("Search")
         search_btn.clicked.connect(self.on_search_btn_clicked)
 
-        layout.addWidget(QPushButton("Explore"))
-        layout.addWidget(QPushButton("Search"))
+        layout.addWidget(explore_btn)
+        layout.addWidget(search_btn)
 
         return page
 
