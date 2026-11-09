@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fraase.embedding import BaseEmbeddingModel
 
+class STAR:
+    """Class for the STAR embedding model."""
 
-class STAR(BaseEmbeddingModel):
     pass
