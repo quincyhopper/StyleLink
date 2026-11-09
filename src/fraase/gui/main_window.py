@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.page_stack = QStackedWidget()
         self.setCentralWidget(self.page_stack)
 
-        self.home_page = HomePage()
+        self.home_page = HomePage(state=self.state)
         self.docs_page = DocsPage()
 
         # Dictionary holding the page index and page widget.
