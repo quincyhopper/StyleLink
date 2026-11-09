@@ -30,10 +30,10 @@ def detect_best_device() -> str:
 class STAR:
     """Class for the STAR embedding model."""
 
-    def __init__(self, device: str | None) -> None:
+    def __init__(self) -> None:
         self.model_path = Path("AIDA-UPM/star")
         self.tokenizer_path = Path("roberta-large")
-        self.device = device or detect_best_device()
+        self.device = detect_best_device()
 
         self._model = None
         self._tokenizer = None
@@ -79,7 +79,7 @@ class STAR:
 
         self._tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=self.tokenizer_path, local_files_only=True
-        ).to(self.device)
+        )
 
         self._model = AutoModel.from_pretrained(pretrained_model_name_or_path=self._model, local_files_only=True).to(
             self.device
