@@ -125,8 +125,18 @@ class NewProjectDialog(QDialog):
     @Slot()
     def on_create_btn_clicked(self) -> None:
         """Create new project given the inputs."""
-        new_project = Project(project_name=self.project_name)
-        self.state.open_project(new_project.dir)
+        # The project directory will just have the project name
+        project_dir = Path(self.project_name.text())
+
+        # Create the project
+        source_file = Path(self.file_name.text())
+        Project.create(project_dir=project_dir, source_file=source_file)
+
+        # Set the active project to the new project
+        self.state.open_project(project_dir=project_dir)
+
+        # Close the dialog box successfully
+        self.accept()
 
 
 class ImportPreviewWidget(QWidget):
