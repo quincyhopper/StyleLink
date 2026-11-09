@@ -72,3 +72,8 @@ class Project:
             doc_index=doc_index,
             centroid_index=centroid_index,
         )
+
+    @property
+    def is_synced(self) -> bool:
+        """True if number of documents in database equals vectors in document index."""
+        return self.database.count_documents() == self.doc_index.ntotal()
