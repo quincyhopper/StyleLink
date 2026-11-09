@@ -3,8 +3,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QStackedWidget, QWidget
 
-from fraase.gui.state import AppState
 from fraase.core.project import Project
+from fraase.gui.state import AppState
 
 
 class HomePage(QStackedWidget):
@@ -45,4 +45,5 @@ class HomePage(QStackedWidget):
 
     @Slot(Project)
     def on_project_changed(self, project: Project | None = None) -> None:
+        """Set current widget in page stack according to active project status."""
         self.setCurrentWidget(self.empty_view if project is None else self.project_view)
