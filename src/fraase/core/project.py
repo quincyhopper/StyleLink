@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fraase.core.database import Database
 from fraase.core.index import VectorIndex
+from fraase.embedding.star import STAR
 
 
 class Project:
@@ -25,6 +26,7 @@ class Project:
         self.database = database
         self.doc_index = doc_index
         self.centroid_index = centroid_index
+        self.embedder = STAR()
 
     @classmethod
     def create(cls, project_dir: Path) -> Project:
@@ -76,4 +78,23 @@ class Project:
     @property
     def is_synced(self) -> bool:
         """True if number of documents in database equals vectors in document index."""
-        return self.database.count_documents() == self.doc_index.ntotal()
+        return self.database.count_documents() == self.doc_index.ntotal
+
+    def sync_embeddings(self) -> None:
+        """Embed any documents that are NOT already in the document index. If a dataset has just been imported, this will simply embed the entire dataset."""
+        existing_ids = self.doc_index.ids
+        missing = [
+            row for row in self.database.get_documents() if row["id"] not in existing_ids
+        ]  # TODO: more efficient way to do this?
+        if not missing:
+            return
+
+        ids = [row["id"] for row in missing]
+        texts = [row["text"] for row in missing]
+
+        # Embed and add to indexes
+        embeddings = self.embedder.embed_texts(texts)
+        self.doc_index.add(embeddings, ids)
+        self.doc_index
+
+        # TODO: build centroids

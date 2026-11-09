@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QStackedWidget, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
 from fraase.core.project import Project
 from fraase.gui.state import AppState
@@ -37,7 +37,7 @@ class HomePage(QStackedWidget):
     def init_project_view(self) -> QWidget:
         """Initialise the project view."""  # ruff:ignore[docstring-missing-returns]
         page = QWidget()
-        layout = QHBoxLayout(page)
+        layout = QVBoxLayout(page)
 
         explore_btn = QPushButton("Explore")
         explore_btn.clicked.connect(self.on_explore_btn_clicked)
@@ -45,8 +45,15 @@ class HomePage(QStackedWidget):
         search_btn = QPushButton("Search")
         search_btn.clicked.connect(self.on_search_btn_clicked)
 
+        embed_btn = QPushButton("Create Styles")
+        embed_btn.clicked.connect(self.on_embed_btn_clicked)
+
+        # Shows whether database and FAISS are synced or not
+        self.sync_label = QLabel()
+
         layout.addWidget(explore_btn)
         layout.addWidget(search_btn)
+        layout.addWidget(embed_btn)
 
         return page
 
@@ -54,9 +61,24 @@ class HomePage(QStackedWidget):
     def on_project_changed(self, project: Project | None = None) -> None:
         """Set current widget in page stack according to active project status."""
         self.setCurrentWidget(self.empty_view if project is None else self.project_view)
+        self.update_sync_status()
 
     def on_explore_btn_clicked(self) -> None:
         pass
 
     def on_search_btn_clicked(self) -> None:
         pass
+
+    def on_embed_btn_clicked(self) -> None:
+        """Syncs embeddings."""
+        if self.state.active_project is not None:
+            self.state.active_project.sync_embeddings()
+            self.update_sync_status()
+
+    def update_sync_status(self) -> None:
+        """Updates sync label with sync status."""
+        if self.state.active_project is None:
+            return
+
+        synced = self.state.active_project.is_synced
+        self.sync_label.setText("Index: In sync" if synced else "Index: Out of sync")
