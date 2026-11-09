@@ -1,6 +1,7 @@
 """Useful classes and functions for importing, parsing and previewing files."""
 
 import csv
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -40,3 +41,13 @@ def preview_file(path: Path, size: int = 5) -> tuple[list[dict[str, Any]], list[
         cols: list[str] = reader.fieldnames
 
         return rows, cols
+
+
+def read_file(path: Path) -> Iterator[dict[str, Any]]:
+    """Stream all rows from a tabular dataset.
+
+    Yields:
+        file reader.
+    """
+    with open(path, mode="r", encoding="utf-8") as file:
+        yield from get_reader_for_file(file, path)
