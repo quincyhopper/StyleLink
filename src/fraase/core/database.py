@@ -41,6 +41,11 @@ class Database:
     """Database manager for a Project's data."""
 
     def __init__(self, path: Path | str = ":memory:"):
+        """Initialise a database.
+
+        Args:
+            path: path to database.
+        """
         # Support a :memory: database (for tests)
         self.path = Path(path) if path != ":memory:" else ":memory:"
         self._is_memory = self.path == ":memory:"
@@ -97,3 +102,13 @@ class Database:
 
         with self._conn:
             self._conn.executemany("INSERT INTO documents (text, author, metadata) VALUES (?, ?, ?)", _rows())
+
+    def count_documents(self) -> int:
+        """Return the total number of documents in database."""
+        row = self._conn.execute("SELECT COUNT(*) FROM documents").fetchone()
+        return row
+
+    def get_documents(self) -> list[sqlite3.Row]:
+        """Return id and text for all documents."""
+        # TODO: this may benefit from streaming?
+        return self._conn.execute("SELECT id, text FROM documents").fetchall()
