@@ -38,6 +38,13 @@ class HomePage(QStackedWidget):
         """Initialise the project view."""  # ruff:ignore[docstring-missing-returns]
         page = QWidget()
         layout = QHBoxLayout(page)
+
+        explore_btn = QPushButton("Explore")
+        explore_btn.clicked.connect(self.on_explore_btn_clicked)
+
+        search_btn = QPushButton("Search")
+        search_btn.clicked.connect(self.on_search_btn_clicked)
+
         layout.addWidget(QPushButton("Explore"))
         layout.addWidget(QPushButton("Search"))
 
@@ -47,3 +54,9 @@ class HomePage(QStackedWidget):
     def on_project_changed(self, project: Project | None = None) -> None:
         """Set current widget in page stack according to active project status."""
         self.setCurrentWidget(self.empty_view if project is None else self.project_view)
+
+    def on_explore_btn_clicked(self) -> None:
+        pass
+
+    def on_search_btn_clicked(self) -> None:
+        pass
