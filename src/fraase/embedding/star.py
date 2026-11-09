@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Callable, Sequence
 
 import numpy as np
@@ -31,8 +30,8 @@ class STAR:
     """Class for the STAR embedding model."""
 
     def __init__(self) -> None:
-        self.model_path = Path("AIDA-UPM/star")
-        self.tokenizer_path = Path("roberta-large")
+        self.model_path = "AIDA-UPM/star"
+        self.tokenizer_path = "roberta-large"
         self.device = detect_best_device()
 
         self._model = None
@@ -77,13 +76,15 @@ class STAR:
 
         from transformers import AutoModel, AutoTokenizer
 
+        cached = self.is_cached_locally()
+
         self._tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.tokenizer_path, local_files_only=True
+            pretrained_model_name_or_path=self.tokenizer_path, local_files_only=cached
         )
 
-        self._model = AutoModel.from_pretrained(pretrained_model_name_or_path=self._model, local_files_only=True).to(
-            self.device
-        )
+        self._model = AutoModel.from_pretrained(
+            pretrained_model_name_or_path=self.model_path, local_files_only=cached
+        ).to(self.device)
 
         self._model.eval()
 
