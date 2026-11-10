@@ -114,7 +114,9 @@ class DocumentsTable:
     def add(self, records: Iterable[dict[str, Any]]) -> None:
         """Insert documents into the documents table."""
         with self._conn:
-            self._conn.executemany("INSERT INTO documents (author, text, metadata) VALUES (?, ?, ?)", self._iter_rows)
+            self._conn.executemany(
+                "INSERT INTO documents (author, text, metadata) VALUES (?, ?, ?)", self._iter_rows(records)
+            )
 
     def count(self) -> int:
         """Return the total number of documents in database."""
