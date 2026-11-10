@@ -133,7 +133,7 @@ class NewProjectDialog(QDialog):
         project = Project.create(project_dir=project_dir)
 
         # Populate database
-        project.database.add_documents(read_file(source_file))
+        project.database.docs_table.add(read_file(source_file))
 
         # Set the active project to the new project
         self.state.open_project(project_dir=project_dir)
