@@ -4,7 +4,7 @@ from enum import IntEnum
 from pathlib import Path
 
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QLabel, QMainWindow, QStackedWidget, QWidget
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QStackedWidget, QWidget
 
 from fraase import __version__
 from fraase.gui.pages.docs_page import DocsPage
@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         new_project_action.triggered.connect(self.on_new_project)
         self.file_menu.addSeparator()
         open_project_action = self.file_menu.addAction("Open")
-        # open_project_action.triggered.connect()
+        open_project_action.triggered.connect(self.on_open_project)
         self.file_menu.addSeparator()
         save_project_action = self.file_menu.addAction("Save")
         # save_project_action.triggered.connect()
@@ -125,3 +125,10 @@ class MainWindow(QMainWindow):
         """Close current project, navigate to the new case project page."""
         dialog = NewProjectDialog(state=self.state)
         dialog.exec()
+
+    @Slot()
+    def on_open_project(self) -> None:
+        """Open an existing project."""
+        project_dir = QFileDialog.getExistingDirectory(self, "Open a project folder")
+        if project_dir:
+            self.state.open_project(Path(project_dir))
