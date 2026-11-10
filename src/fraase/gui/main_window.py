@@ -11,6 +11,7 @@ from fraase.gui.pages.docs_page import DocsPage
 from fraase.gui.pages.explore_page import ExplorePage
 from fraase.gui.pages.home_page import HomePage
 from fraase.gui.pages.new_project_dialog import NewProjectDialog
+from fraase.gui.pages.search_page import SearchPage
 from fraase.gui.state import AppState
 
 MENUBAR_STYLESHEET_PATH = Path(__file__).parent / "static" / "styles" / "menu_bar.qss"
@@ -48,6 +49,7 @@ class MainWindow(QMainWindow):
         self.home_page = HomePage(state=self.state)
         self.docs_page = DocsPage()
         self.explore_page = ExplorePage(state=self.state, parent=self)
+        self.search_page = SearchPage(state=self.state, parent=self)
 
         # Dictionary holding the page index and page widget.
         # Useful for self.navigate_to(page_id)
