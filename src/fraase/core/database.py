@@ -19,8 +19,8 @@ FILE_PRAGMAS = [
 CREATE_DOCUMENTS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT NOT NULL,
     author TEXT NOT NULL,
+    text TEXT NOT NULL,
     metadata JSON NOT NULL DEFAULT '{}'
 );
 """
@@ -103,18 +103,18 @@ class DocumentsTable:
         else:
             self._conn: sqlite3.Connection = connection
 
+    def _iter_rows(records: Iterable[dict[str, Any]]) -> Iterable[str, str, str]:
+        """Yield rows lazily as a tuple of (author, text, metadata (json))."""
+        for row in records:
+            author = row["author"]
+            text = row["text"]
+            metadata = {k: v for k, v in row.items() if k and k not in ("text", "author")}
+            yield (author, text, json.dumps(metadata))
+
     def add(self, records: Iterable[dict[str, Any]]) -> None:
         """Insert documents into the documents table."""
-
-        def _rows():
-            for row in records:
-                text = row["text"]
-                author = row["author"]
-                metadata = {k: v for k, v in row.items() if k and k not in ("text", "author")}
-                yield (text, author, json.dumps(metadata))
-
         with self._conn:
-            self._conn.executemany("INSERT INTO documents (text, author, metadata) VALUES (?, ?, ?)", _rows())
+            self._conn.executemany("INSERT INTO documents (author, text, metadata) VALUES (?, ?, ?)", self._iter_rows)
 
     def count(self) -> int:
         """Return the total number of documents in database."""
