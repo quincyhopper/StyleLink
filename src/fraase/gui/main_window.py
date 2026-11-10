@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QStackedWidget, QWidget
 
 from fraase import __version__
 from fraase.gui.pages.docs_page import DocsPage
+from fraase.gui.pages.explore_page import ExplorePage
 from fraase.gui.pages.home_page import HomePage
 from fraase.gui.pages.new_project_dialog import NewProjectDialog
 from fraase.gui.state import AppState
@@ -20,6 +21,8 @@ class PageID(IntEnum):
 
     HOME = 0
     DOCS = 1
+    EXPLORE = 2
+    SEARCH = 3
 
 
 class MainWindow(QMainWindow):
@@ -44,12 +47,14 @@ class MainWindow(QMainWindow):
 
         self.home_page = HomePage(state=self.state)
         self.docs_page = DocsPage()
+        self.explore_page = ExplorePage(state=self.state, parent=self)
 
         # Dictionary holding the page index and page widget.
         # Useful for self.navigate_to(page_id)
         self.page_widgets: dict[PageID, QWidget] = {
             PageID.HOME: self.home_page,
             PageID.DOCS: self.docs_page,
+            PageID.EXPLORE: self.explore_page,
         }
 
         # Add all of the pages to the home stack
@@ -71,21 +76,30 @@ class MainWindow(QMainWindow):
         # File menu
         self.file_menu = self.menuBar().addMenu("&File")
         new_project_action = self.file_menu.addAction("New Project")
+        new_project_action.triggered.connect(self.on_new_project)
         self.file_menu.addSeparator()
-        # open_project_action = self.file_menu.addAction("Open")
+        open_project_action = self.file_menu.addAction("Open")
+        # open_project_action.triggered.connect()
         self.file_menu.addSeparator()
-        # save_project_action = self.file_menu.addAction("Save")
-        # saveas_project_action = self.file_menu.addAction("Save as")
+        save_project_action = self.file_menu.addAction("Save")
+        # save_project_action.triggered.connect()
+        saveas_project_action = self.file_menu.addAction("Save as")
+        # saveas_project_action.triggered.connect()
 
         # Docs menu
-        self.docs_menu = self.menuBar().addMenu("&Docs")
-
-        # Add connections
-        new_project_action.triggered.connect(self.on_new_project)
-        # open_project_action.triggered.connect()
-        # save_project_action.triggered.connect()
-        # saveas_project_action.triggered.connect()
+        self.docs_menu = self.menuBar().addAction("&Docs")
         # self.docs_menu.triggered.connect()
+
+        # The Explore and Search menus appear only when a project is active
+        self.explore_menu = self.menuBar().addAction("&Explore")
+        self.explore_menu.triggered.connect(lambda: self.navigate_to(PageID.EXPLORE))
+
+        self.search_menu = self.menuBar().addAction("&Search")
+        self.search_menu.triggered.connect(lambda: self.navigate_to(PageID.SEARCH))
+
+        # Read the signal from the active project being changed, and diplay Explore and Search if project  exists
+        self.state.project_changed.connect(self.on_project_changed)
+        self.on_project_changed(self.state.active_project)
 
     def build_status_bar(self) -> None:
         """Build the status bar responsible for indicating the current project and any other details."""
@@ -98,6 +112,13 @@ class MainWindow(QMainWindow):
         if dst is not None:
             # Handle the navigation here
             self.page_stack.setCurrentWidget(dst)
+
+    @Slot(object)
+    def on_project_changed(self, project: object) -> None:
+        """Make Explore and Search visible if there is an active project."""
+        has_project = project is not None
+        self.explore_menu.setVisible(has_project)
+        self.search_menu.setVisible(has_project)
 
     @Slot()
     def on_new_project(self) -> None:
