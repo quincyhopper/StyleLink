@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence
 
 from fraase.core.database import Database
 from fraase.core.index import VectorIndex
@@ -79,13 +79,13 @@ class Project:
     @property
     def is_synced(self) -> bool:
         """True if number of documents in database equals vectors in document index."""
-        return self.database.count_documents() == self.doc_index.ntotal
+        return self.database.docs_table.count() == self.doc_index.ntotal
 
     def sync_embeddings(self, progress_callback: Callable[[int, int], None] | None = None) -> None:
         """Embed any documents that are NOT already in the document index. If a dataset has just been imported, this will simply embed the entire dataset."""
         existing_ids = self.doc_index.ids
         missing = [
-            row for row in self.database.get_documents() if row["id"] not in existing_ids
+            row for row in self.database.docs_table.get_all() if row["id"] not in existing_ids
         ]  # TODO: more efficient way to do this?
         if not missing:
             return
@@ -99,3 +99,20 @@ class Project:
         self.doc_index.add(embeddings, ids)
 
         # TODO: build centroids
+
+    def build_author_centroids(self, authors: Sequence[str] | None = None) -> None:
+        """Build centroids for the given authors and populate the SQL and FAISS databases.
+
+        Args:
+            authors: sequence of authors for whom to construct centroids.
+        """
+        # Find target IDs - the authors we need to build
+        if authors is None:
+            self.centroid_index.reset()
+            self.database.centroids_table.clear()
+            target_ids = self.doc_index.ids
+        else:
+            target_ids = list(authors)
+
+        if not target_ids:
+            return

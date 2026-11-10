@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -61,6 +61,9 @@ class Database:
         # Init the database (schemas, etc)
         self._init_database()
 
+        self.docs_table = DocumentsTable(self)
+        self.centroids_table = CentroidsTable(self)
+
     @property
     def conn(self) -> sqlite3.Connection:
         """Expose underlying SQLite connection."""
@@ -90,8 +93,17 @@ class Database:
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
 
-    # --- Documents table methods ---
-    def add_documents(self, records: Iterable[dict[str, Any]]) -> None:
+
+class DocumentsTable:
+    """Class for managing the documents table of the main database."""
+
+    def __init__(self, connection: sqlite3.Connection | Database):
+        if isinstance(connection, Database):
+            self._conn: sqlite3.Connection = connection.conn
+        else:
+            self._conn: sqlite3.Connection = connection
+
+    def add(self, records: Iterable[dict[str, Any]]) -> None:
         """Insert documents into the documents table."""
 
         def _rows():
@@ -104,12 +116,31 @@ class Database:
         with self._conn:
             self._conn.executemany("INSERT INTO documents (text, author, metadata) VALUES (?, ?, ?)", _rows())
 
-    def count_documents(self) -> int:
+    def count(self) -> int:
         """Return the total number of documents in database."""
         row = self._conn.execute("SELECT COUNT(*) FROM documents").fetchone()
         return row
 
-    def get_documents(self) -> list[sqlite3.Row]:
+    def get_all(self) -> list[sqlite3.Row]:
         """Return id and text for all documents."""
         # TODO: this may benefit from streaming?
         return self._conn.execute("SELECT id, text FROM documents").fetchall()
+
+    def get_ids_by_author(self, authors: Sequence[str]) -> list[int]:
+        """Return the unique IDs of the given author names."""
+
+
+class CentroidsTable:
+    """Class for managing the centroids table of the main database."""
+
+    def __init__(self, connection: sqlite3.Connection | Database):
+        if isinstance(connection, Database):
+            self._conn: sqlite3.Connection = connection.conn
+        else:
+            self._conn: sqlite3.Connection = connection
+
+    def clear(self) -> None:
+        """Delete all author profiles and reset autoincrement."""
+        with self._conn:
+            self._conn.execute("DELETE FROM centroids")  # Delete everything
+            self._conn.execute("DELETE FROM sqlite_sequence WHERE name = 'centroids'")
