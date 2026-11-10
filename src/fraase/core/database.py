@@ -103,7 +103,7 @@ class DocumentsTable:
         else:
             self._conn: sqlite3.Connection = connection
 
-    def _iter_rows(records: Iterable[dict[str, Any]]) -> Iterable[str, str, str]:
+    def _iter_rows(self, records: Iterable[dict[str, Any]]) -> Iterable[str, str, str]:
         """Yield rows lazily as a tuple of (author, text, metadata (json))."""
         for row in records:
             author = row["author"]
