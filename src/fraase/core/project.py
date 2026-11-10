@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Callable
 
 from fraase.core.database import Database
 from fraase.core.index import VectorIndex
@@ -80,7 +81,7 @@ class Project:
         """True if number of documents in database equals vectors in document index."""
         return self.database.count_documents() == self.doc_index.ntotal
 
-    def sync_embeddings(self) -> None:
+    def sync_embeddings(self, progress_callback: Callable[[int, int], None] | None = None) -> None:
         """Embed any documents that are NOT already in the document index. If a dataset has just been imported, this will simply embed the entire dataset."""
         existing_ids = self.doc_index.ids
         missing = [
@@ -93,8 +94,8 @@ class Project:
         texts = [row["text"] for row in missing]
 
         # Embed and add to indexes
-        embeddings = self.embedder.embed_texts(texts)
+        embeddings = self.embedder.embed_texts(texts=texts, progress_callback=progress_callback)
+        self.embedder.release()
         self.doc_index.add(embeddings, ids)
-        self.doc_index
 
         # TODO: build centroids

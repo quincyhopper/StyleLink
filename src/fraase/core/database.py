@@ -54,7 +54,8 @@ class Database:
             assert isinstance(self.path, Path)
 
         # Establish database connection
-        self._conn = sqlite3.connect(self.path)
+        # Check same thread is False to allow queries from QThread
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
 
         # Init the database (schemas, etc)

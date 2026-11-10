@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt, QThread, Signal, Slot
+from PySide6.QtWidgets import QLabel, QProgressDialog, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
 from fraase.core.project import Project
 from fraase.gui.state import AppState
@@ -71,9 +71,27 @@ class HomePage(QStackedWidget):
 
     def on_embed_btn_clicked(self) -> None:
         """Syncs embeddings."""
-        if self.state.active_project is not None:
-            self.state.active_project.sync_embeddings()
-            self.update_sync_status()
+        if self.state.active_project is None:
+            return
+
+        self.progress = QProgressDialog(labelText="Embedding documents...", cancelButtonText=None, minimum=0, maximum=0)
+        self.progress.setWindowTitle("Creating Styles")
+        self.progress.setWindowModality(Qt.WindowModality.WindowModal)  # Block input to
+        self.progress.setMinimumDuration(0)  # Show immediately when clicked
+        self.progress.show()
+
+        self.worker = EmbedWorker(self.state.active_project, self)
+        self.worker.progress.connect(self.on_embed_progress)
+        self.worker.finished.connect(self.on_embed_finished)
+        self.worker.start()
+
+    def on_embed_progress(self, processed: int, total: int) -> None:
+        self.progress.setMaximum(total)
+        self.progress.setValue(processed)
+
+    def on_embed_finished(self) -> None:
+        self.progress.close()
+        self.update_sync_status()
 
     def update_sync_status(self) -> None:
         """Updates sync label with sync status."""
@@ -82,3 +100,16 @@ class HomePage(QStackedWidget):
 
         synced = self.state.active_project.is_synced
         self.sync_label.setText("Index: In sync" if synced else "Index: Out of sync")
+
+
+class EmbedWorker(QThread):
+    """Background thread for embedding documents."""
+
+    progress = Signal(int, int)
+
+    def __init__(self, project: Project, parent=None) -> None:
+        super().__init__(parent)
+        self.project = project
+
+    def run(self) -> None:
+        self.project.sync_embeddings(progress_callback=self.progress.emit)
