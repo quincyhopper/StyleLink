@@ -151,13 +151,6 @@ class SearchPage(QWidget):
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(10)
 
-        # Persistent search mode bar
-        self.mode_bar = QFrame()
-        self.mode_bar.setFrameShape(QFrame.Shape.StyledPanel)
-        mode_bar_vlayout = QVBoxLayout(self.mode_bar)
-        mode_bar_vlayout.setContentsMargins(12, 10, 12, 10)
-        mode_bar_vlayout.setSpacing(8)
-
         # This row will hold everything to set parameters for the search (mode, k, exclude self, etc)
         param_row = QHBoxLayout()
         param_row.setSpacing(10)
