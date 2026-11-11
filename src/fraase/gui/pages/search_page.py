@@ -29,6 +29,13 @@ from fraase.embedding.calibrator import LLRCalibrator
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
 
+# Maps the search mode to the query and target tables
+MODES_MAP = {
+    "Document-to-Document": ("documents", "documents"),
+    "Document-to-Author": ("documents", "centroids"),
+    "Author-to-Author": ("centroids", "centroids"),
+}
+
 
 @dataclass(frozen=True)
 class BaseResult:
@@ -172,7 +179,7 @@ class SearchPage(QWidget):
             self.mode_combo.addItem(mode)
 
         # Make any changes related to changing the search mode
-        self.mode_combo.currentIndexChanged.connect(self._on_mode_changed)
+        self.mode_combo.currentTextChanged.connect(self._on_mode_changed)
         param_row.addWidget(self.mode_combo)
 
         # K parameter selector
@@ -240,10 +247,12 @@ class SearchPage(QWidget):
         self.target_table.set_database(db)
         self.results_stack.setCurrentWidget(self.empty_results_label)
 
-    @Slot()
-    def _on_mode_changed(self) -> None:
+    @Slot(str)
+    def _on_mode_changed(self, mode: str) -> None:
         """Update tables to select centroids or documents."""
-        self.query_mode = None  # TODO: define this properly
+        query_table, target_table = MODES_MAP[mode]
+        self.query_table.set_table(query_table)
+        self.target_table.set_table(target_table)
 
     @Slot(object, object)
     def _on_search_btn_clicked(self, queries: list[int], allowed_ids: list[int]) -> None:

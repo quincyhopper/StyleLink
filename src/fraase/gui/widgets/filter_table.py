@@ -249,6 +249,16 @@ class SqlFilterTable(QWidget):
         self._clear_rules()
         self.refresh()
 
+    def set_table(self, table: str) -> None:
+        """Switch the active SQLite table (documents, centroids)."""
+        if table == self.table:
+            return
+        self.table_name = table
+        self.core_fields = TABLE_FIELDS[table]
+        self.meta_keys = self._discover_meta_keys()
+        self._clear_rules()
+        self.refresh()
+
     def _discover_meta_keys(self) -> list[str]:
         """Fetch the unique metadata from the table.
 
