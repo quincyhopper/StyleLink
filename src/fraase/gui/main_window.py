@@ -57,6 +57,7 @@ class MainWindow(QMainWindow):
             PageID.HOME: self.home_page,
             PageID.DOCS: self.docs_page,
             PageID.EXPLORE: self.explore_page,
+            PageID.SEARCH: self.search_page,
         }
 
         # Add all of the pages to the home stack
@@ -73,7 +74,8 @@ class MainWindow(QMainWindow):
             self.menuBar().setStyleSheet(file.read())
 
         # Home menu
-        self.home_menu = self.menuBar().addMenu("&Home")
+        self.home_menu = self.menuBar().addAction("&Home")
+        self.home_menu.triggered.connect(lambda: self.navigate_to(PageID.HOME))
 
         # File menu
         self.file_menu = self.menuBar().addMenu("&File")
