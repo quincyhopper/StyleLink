@@ -258,6 +258,8 @@ class SearchPage(QWidget):
     def _on_search_btn_clicked(self) -> None:
         # TODO: display any errors with input (i.e. no query, index empty, etc)
         self.run_search()
+        self.steps_tab.setCurrentWidget(self.results_stack)
+        self.results_stack.setCurrentWidget(self.results_widget)
 
     @Slot()
     def _on_query_row_selected(self, row_idx: int) -> None:
@@ -305,6 +307,8 @@ class SearchResultsWidget(QWidget):
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
+
+    def _build_ui(self) -> None:
         self.query_list = QListWidget(self)
 
     def populate_results(self, results: BaseResult) -> None:
