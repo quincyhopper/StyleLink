@@ -82,7 +82,7 @@ class SqlTableModel(QAbstractTableModel):
         self.core_fields: set[str] = set()
 
     def set_data(self, rows: list[dict[str, Any]], core_fields: list[str], meta_keys: list[str]) -> None:
-        """"""
+        """Fill in the data in the SQL viewer."""
         self.beginResetModel()
         self.rows = rows
         self.core_fields = set(core_fields)
