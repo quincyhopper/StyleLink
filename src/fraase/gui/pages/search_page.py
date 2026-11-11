@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QSpinBox,
+    QStackedWidget,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -208,6 +209,8 @@ class SearchPage(QWidget):
         target_tab = self._build_target_tab()
         self.steps_tab.addTab(target_tab, "Define targets")
 
+        results_tab = self._build_results_tab()
+        self.steps_tab.addTab(results_tab, "Results")
         layout.addWidget(self.steps_tab)
 
     def _build_query_tab(self) -> None:
@@ -235,10 +238,26 @@ class SearchPage(QWidget):
 
         # TODO: behaviour of this button should save the targets?
         accept_btn = QPushButton("Accept")
-        # accept_btn.clicked.connect(lambda: self.steps_tab.setCurrentIndex(1))
+        accept_btn.clicked.connect(lambda: self.steps_tab.setCurrentIndex(2))
         layout.addWidget(accept_btn)
 
         return tab
+
+    def _build_results_tab(self) -> None:
+        """Build results tab with an empty placeholder and the results widget."""
+        # If no search has been run, we just display some text advising the user to do a search. Otherwise, we display
+        # the results.
+        self.results_stack = QStackedWidget()
+
+        self.empty_results_label = QLabel("Please run a search to view results.")
+        self.empty_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.results_widget = SearchResultsWidget(self.results_stack)
+
+        self.results_stack.addWidget(self.empty_results_label)
+        self.results_stack.addWidget(self.results_widget)
+
+        return self.results_stack
 
     @Slot()
     def _on_mode_changed(self) -> None:
