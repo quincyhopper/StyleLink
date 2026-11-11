@@ -197,7 +197,7 @@ class SearchPage(QWidget):
         layout.addLayout(param_row)
 
         # Now we need the query definition and optional search restriction. This will be two tabs that the user follows in linear order:
-        # they define a query, press "Accept", and then move on to search restriction. This stage will be optional, so they can just click
+        # they define a query and then move on to search restriction. This stage will be optional, so they can just click
         # "Search" from this point and they will be directed to the results page.
 
         # This will hold the two tabs
@@ -222,24 +222,16 @@ class SearchPage(QWidget):
         self.query_table = SqlFilterTable(table="documents", parent=tab)
         layout.addWidget(self.query_table)
 
-        accept_btn = QPushButton("Accept")
-        accept_btn.clicked.connect(lambda: self.steps_tab.setCurrentIndex(1))
-        layout.addWidget(accept_btn)
-
         return tab
 
     def _build_target_tab(self) -> None:
         """Build tab for restricting the search."""
+        # Repeated logic but might need to add something later
         tab = QWidget()
         layout = QVBoxLayout(tab)
 
         self.target_tab = SqlFilterTable(table="documents", parent=tab)
         layout.addWidget(self.target_tab)
-
-        # TODO: behaviour of this button should save the targets?
-        accept_btn = QPushButton("Accept")
-        accept_btn.clicked.connect(lambda: self.steps_tab.setCurrentIndex(2))
-        layout.addWidget(accept_btn)
 
         return tab
 
