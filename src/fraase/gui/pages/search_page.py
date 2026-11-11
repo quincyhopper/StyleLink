@@ -188,6 +188,11 @@ class SearchPage(QWidget):
         param_row.addWidget(self.exclude_checkbox)
 
         param_row.addStretch(1)
+
+        search_btn = QPushButton("Search")
+        search_btn.clicked.connect(self._on_search_btn_clicked)
+        param_row.addWidget(search_btn)
+
         layout.addLayout(param_row)
 
         # Now we need the query definition and optional search restriction. This will be two tabs that the user follows in linear order:
