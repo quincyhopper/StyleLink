@@ -203,37 +203,14 @@ class SearchPage(QWidget):
         # This will hold the two tabs
         self.steps_tab = QTabWidget()
 
-        query_tab = self._build_query_tab()
-        self.steps_tab.addTab(query_tab, "Define queries")
+        self.query_table = SqlFilterTable(table="documents", parent=self)
+        self.target_table = SqlFilterTable(table="documents", parent=self)
 
-        target_tab = self._build_target_tab()
-        self.steps_tab.addTab(target_tab, "Define targets")
+        self.steps_tab.addTab(self.query_table, "Define queries")
+        self.steps_tab.addTab(self.target_table, "Define targets")
+        self.steps_tab.addTab(self._build_results_tab(), "Results")
 
-        results_tab = self._build_results_tab()
-        self.steps_tab.addTab(results_tab, "Results")
         layout.addWidget(self.steps_tab)
-
-    def _build_query_tab(self) -> None:
-        """Build the tab in which the user defines which documents/centroids will be used as queries."""
-        tab = QWidget()  # PySide6 docs recommends creating a widget for each tab
-        layout = QVBoxLayout(tab)
-
-        # SQL table for selecting queries. This can be updated via self.state.project_changed
-        self.query_table = SqlFilterTable(table="documents", parent=tab)
-        layout.addWidget(self.query_table)
-
-        return tab
-
-    def _build_target_tab(self) -> None:
-        """Build tab for restricting the search."""
-        # Repeated logic but might need to add something later
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-
-        self.target_tab = SqlFilterTable(table="documents", parent=tab)
-        layout.addWidget(self.target_tab)
-
-        return tab
 
     def _build_results_tab(self) -> None:
         """Build results tab with an empty placeholder and the results widget."""
