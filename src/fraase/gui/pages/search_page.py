@@ -254,21 +254,46 @@ class SearchPage(QWidget):
         self.query_table.set_table(query_table)
         self.target_table.set_table(target_table)
 
-    @Slot(object, object)
-    def _on_search_btn_clicked(self, queries: list[int], allowed_ids: list[int]) -> None:
+    @Slot()
+    def _on_search_btn_clicked(self) -> None:
         # TODO: display any errors with input (i.e. no query, index empty, etc)
-        pass
+        self.run_search()
 
     @Slot()
     def _on_query_row_selected(self, row_idx: int) -> None:
         """Update the results view to show the selected query and its matches."""
         pass
 
-    def run_search(
-        self, mode: str, queries: list[int], k: int, exclude_self: bool, allowed_ids: list[int] | None = None
-    ) -> None:
-        # TODO: Dispatch a search worker to perform the vector search. Worker will just call VectorIndex methods
-        pass
+    def run_search(self) -> None:
+        """Peform a vector search given the currently selected parameters."""
+        # Retrieve all the parameters of the search
+        query_ids = self.query_table.get_effective_ids()
+        target_ids = self.target_table.get_effective_ids()
+        k: int = self.k_spinbox.value()
+        exclude_self: bool = self.exclude_checkbox.isChecked()
+
+        # Determine which FAISS indexes we need to use
+        query_table, target_table = MODES_MAP[self.mode_combo.currentText()]
+
+        # Doc2Doc search
+        if query_table == "documents" and target_table == "documents":
+            distances, result_ids = self.state.active_project.doc_index.search_by_id(
+                query_doc_id=query_ids, k=k, exclude_self=exclude_self, allowed_ids=target_ids
+            )
+            print("Done")
+        # Doc2Author search
+        elif query_table == "documents" and target_table == "centroids":
+            # Extract queries from the document index
+            query_vecs = self.state.active_project.doc_index.reconstruct(query_ids)
+
+            distances, result_ids = self.state.active_project.centroid_index.search(
+                queries=query_vecs, k=k, allowed_ids=target_ids
+            )
+        # Author2Author search
+        else:
+            distances, result_ids = self.state.active_project.centroid_index.search_by_id(
+                query_doc_id=query_ids, k=k, exclude_self=exclude_self, allowed_ids=target_ids
+            )
 
 
 class SearchResultsWidget(QWidget):
