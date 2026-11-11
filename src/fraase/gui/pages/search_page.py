@@ -16,7 +16,9 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QPushButton,
     QSpinBox,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -141,9 +143,9 @@ class SearchPage(QWidget):
         self.state = state
         self.calibrator = LLRCalibrator()
 
-        self.build_ui()
+        self._build_ui()
 
-    def build_ui(self) -> None:
+    def _build_ui(self) -> None:
         """Build the layout of the search page."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
@@ -193,13 +195,57 @@ class SearchPage(QWidget):
         param_row.addWidget(self.exclude_checkbox)
 
         param_row.addStretch(1)
-
         layout.addLayout(param_row)
+
+        # Now we need the query definition and optional search restriction. This will be two tabs that the user follows in linear order:
+        # they define a query, press "Accept", and then move on to search restriction. This stage will be optional, so they can just click
+        # "Search" from this point and they will be directed to the results page.
+
+        # This will hold the two tabs
+        self.steps_tab = QTabWidget()
+
+        query_tab = self._build_query_tab()
+        self.steps_tab.addTab(query_tab, "Define queries")
+
+        target_tab = self._build_target_tab()
+        self.steps_tab.addTab(target_tab, "Define targets")
+
+        layout.addWidget(self.steps_tab)
+
+    def _build_query_tab(self) -> None:
+        """Build the tab in which the user defines which documents/centroids will be used as queries."""
+        tab = QWidget()  # PySide6 docs recommends creating a widget for each tab
+        layout = QVBoxLayout(tab)
+
+        # SQL table for selecting queries. This can be updated via self.state.project_changed
+        self.query_table = SqlFilterTable(table="documents", parent=tab)
+        layout.addWidget(self.query_table)
+
+        accept_btn = QPushButton("Accept")
+        accept_btn.clicked.connect(lambda: self.steps_tab.setCurrentIndex(1))
+        layout.addWidget(accept_btn)
+
+        return tab
+
+    def _build_target_tab(self) -> None:
+        """Build tab for restricting the search."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+
+        self.target_tab = SqlFilterTable(table="documents", parent=tab)
+        layout.addWidget(self.target_tab)
+
+        # TODO: behaviour of this button should save the targets?
+        accept_btn = QPushButton("Accept")
+        # accept_btn.clicked.connect(lambda: self.steps_tab.setCurrentIndex(1))
+        layout.addWidget(accept_btn)
+
+        return tab
 
     @Slot()
     def _on_mode_changed(self) -> None:
         """Update tables to select centroids or documents."""
-        pass
+        self.query_mode = None  # TODO: define this properly
 
     @Slot(object, object)
     def _on_search_btn_clicked(self, queries: list[int], allowed_ids: list[int]) -> None:
