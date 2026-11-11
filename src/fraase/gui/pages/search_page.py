@@ -1,21 +1,46 @@
 from __future__ import annotations
 
 import json
+from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QListWidget, QListWidgetItem, QWidget
 
 from fraase.embedding.calibrator import LLRCalibrator
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
 
 
-@dataclass
-class DocumentSearchResult:
+@dataclass(frozen=True)
+class BaseResult:
+    """Base result class for document and centroid searches."""
+
+    rank: int
+    score: float
+    llr: float | None
+    author: str
+
+    @abstractmethod
+    def to_table_row(self) -> list[str]:
+        """Translate a result to a list of strings."""
+        pass
+
+    @abstractmethod
+    def to_dict(self) -> dict[str, Any]:
+        """Translate a result to a dictionary."""
+        pass
+
+    def to_inspector_text(self) -> str:
+        """Translate result into string format to be printed in inspector box."""
+        pass
+
+
+@dataclass(frozen=True)
+class DocumentSearchResult(BaseResult):
     """Dataclass representing a single document search result."""
 
     rank: int
@@ -46,24 +71,26 @@ class DocumentSearchResult:
 
     def to_inspector_text(self) -> str:
         return (
-            f"Rank #{self.rank} | Sim: {self.similarity:.4f}\n"
-            f"Author: {self.user_id}\n\n"
+            f"Rank #{self.rank} | Sim: {self.score:.4f}\n"
+            f"Author: {self.author}\n\n"
             f"--- Full Text ---\n{self.text}\n\n"
             f"--- Metadata ---\n{json.dumps(self.metadata, indent=2)}"
         )
 
 
-@dataclass
-class CentroidSearchResult:
+@dataclass(frozen=True)
+class CentroidSearchResult(BaseResult):
+    """Dataclass representing a single centroid search result."""
+
     rank: int
     score: float
     llr: float | None
     id: int
     author: str
-    text: str
+    doc_count: int
     metadata: dict
 
-    HEADERS = ["Rank", "Score", "LLR", "ID", "Author"]
+    HEADERS = ["Rank", "Score", "LLR", "ID", "Author", "Doc Count"]
 
     def to_table_row(self) -> list[str]:
         llr_str = f"{self.llr:.3f}" if self.llr is not None else "N/A"
@@ -76,6 +103,7 @@ class CentroidSearchResult:
             "llr": self.llr,
             "id": self.id,
             "author": self.author,
+            "doc_count": self.doc_count,
         }
 
     def to_inspector_text(self) -> str:
@@ -109,8 +137,13 @@ class SearchPage(QWidget):
         pass
 
     @Slot(list[int], list[int])
-    def on_search_btn_clicked(self, queries: list[int], allowed_ids: list[int]) -> None:
+    def _on_search_btn_clicked(self, queries: list[int], allowed_ids: list[int]) -> None:
         # TODO: display any errors with input (i.e. no query, index empty, etc)
+        pass
+
+    @Slot()
+    def _on_query_row_selected(self, row_idx: int) -> None:
+        """Update the results view to show the selected query and its matches."""
         pass
 
     def run_search(
@@ -127,5 +160,10 @@ class SearchResultsWidget(QWidget):
     For each query text, the k results are shown in the central results box
     """
 
-    def __init__(self):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.query_list = QListWidget(self)
+
+    def populate_results(self, results: BaseResult) -> None:
+        """Fill the results widget with the results."""
         pass
