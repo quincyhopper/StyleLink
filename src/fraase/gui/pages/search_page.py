@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from fraase.core.project import Project
 from fraase.embedding.calibrator import LLRCalibrator
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
@@ -143,8 +144,11 @@ class SearchPage(QWidget):
         super().__init__(parent)
         self.state = state
         self.calibrator = LLRCalibrator()
-
         self._build_ui()
+
+        # Update the filter tables on initialisation or if project is changed
+        self.state.project_changed.connect(self._on_project_changed)
+        self._on_project_changed(self.state.active_project)
 
     def _build_ui(self) -> None:
         """Build the layout of the search page."""
@@ -227,6 +231,14 @@ class SearchPage(QWidget):
         self.results_stack.addWidget(self.results_widget)
 
         return self.results_stack
+
+    @Slot(object)
+    def _on_project_changed(self, project: object) -> None:
+        """Attach the active project's database to the filter tables."""
+        db = project.database if project is not None else None
+        self.query_table.set_database(db)
+        self.target_table.set_database(db)
+        self.results_stack.setCurrentWidget(self.empty_results_label)
 
     @Slot()
     def _on_mode_changed(self) -> None:

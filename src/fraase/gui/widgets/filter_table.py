@@ -242,7 +242,7 @@ class SqlFilterTable(QWidget):
         splitter.setStretchFactor(1, 2)
         layout.addWidget(splitter, 1)
 
-    def set_database(self, db: Database) -> None:
+    def set_database(self, db: Database | None) -> None:
         """Link to the database."""
         self.db = db
         self.meta_keys = self._discover_meta_keys()
