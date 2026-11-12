@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable
+
+import numpy as np
 
 from fraase.core.database import Database
 from fraase.core.index import VectorIndex
@@ -78,42 +80,54 @@ class Project:
 
     @property
     def is_synced(self) -> bool:
-        """True if number of documents in database equals vectors in document index."""
-        return self.database.docs_table.count() == self.doc_index.ntotal
+        """True if all documents and centroids are indxed."""
+        author_count = self.database.conn.execute("SELECT COUNT(DISTINCT author) FROM documents").fetchone()[0]
+        return self.database.docs_table.count() == self.doc_index.ntotal and author_count == self.centroid_index.ntotal
 
     def sync_embeddings(self, progress_callback: Callable[[int, int], None] | None = None) -> None:
         """Embed any documents that are NOT already in the document index. If a dataset has just been imported, this will simply embed the entire dataset."""
         existing_ids = self.doc_index.ids
-        missing = [
-            row for row in self.database.docs_table.get_all() if row["id"] not in existing_ids
-        ]  # TODO: more efficient way to do this?
-        if not missing:
+        missing = [row for row in self.database.docs_table.get_all() if row["id"] not in existing_ids]
+
+        if missing:
+            ids = [row["id"] for row in missing]
+            texts = [row["text"] for row in missing]
+
+            # Embed and add to indexes
+            embeddings = self.embedder.embed_texts(texts=texts, progress_callback=progress_callback)
+            self.embedder.release()
+            self.doc_index.add(embeddings, ids)
+            self.doc_index.save(self.project_dir / self.DOC_INDEX_FILENAME)
+
+        author_count = self.database.conn.execute("SELECT COUNT(DISTINCT author) FROM documents").fetchone()[0]
+        if missing or self.centroid_index.ntotal != author_count:
+            self.build_author_centroids()
+
+    def build_author_centroids(self) -> None:
+        """Rebuild all centroids for all authors in the database."""
+        # Clear all existing centroids (if any)
+        self.centroid_index.reset()
+        self.database.centroids_table.clear()
+
+        # Get all document ids in the document index
+        indexed_ids = self.doc_index.ids
+        if not indexed_ids:
             return
 
-        ids = [row["id"] for row in missing]
-        texts = [row["text"] for row in missing]
+        # Group indexed document IDs by author
+        author_docs: dict[str, list[int]] = {}
+        for row in self.database.conn.execute("SELECT id, author FROM documents"):
+            if row["id"] in indexed_ids:
+                author_docs.setdefault(row["author"], []).append(row["id"])
 
-        # Embed and add to indexes
-        embeddings = self.embedder.embed_texts(texts=texts, progress_callback=progress_callback)
-        self.embedder.release()
-        self.doc_index.add(embeddings, ids)
-        self.doc_index.save(self.project_dir / self.DOC_INDEX_FILENAME)
+        centroid_ids: list[int] = []
+        centroid_vecs: list[np.ndarray] = []
 
-        # TODO: build centroids
+        with self.database.conn as conn:
+            for author, ids in author_docs.items():
+                cursor = conn.execute("INSERT INTO centroids (author, doc_count) VALUES (?, ?)", (author, len(ids)))
+                centroid_ids.append(cursor.lastrowid)
+                centroid_vecs.append(self.doc_index.centroid(ids))
 
-    def build_author_centroids(self, authors: Sequence[str] | None = None) -> None:
-        """Build centroids for the given authors and populate the SQL and FAISS databases.
-
-        Args:
-            authors: sequence of authors for whom to construct centroids.
-        """
-        # Find target IDs - the authors we need to build
-        if authors is None:
-            self.centroid_index.reset()
-            self.database.centroids_table.clear()
-            target_ids = self.doc_index.ids
-        else:
-            target_ids = list(authors)
-
-        if not target_ids:
-            return
+        self.centroid_index.add(np.vstack(centroid_vecs), centroid_ids)
+        self.centroid_index.save(self.project_dir / self.CENTROID_INDEX_FILENAME)
