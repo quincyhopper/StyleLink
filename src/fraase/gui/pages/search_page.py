@@ -193,11 +193,9 @@ class SearchPage(QWidget):
         self.k_spinbox.setToolTip("How many related documents/authors do you want to find?")
         param_row.addWidget(self.k_spinbox)
 
-        self.exclude_checkbox = QCheckBox("Exclude self")
+        self.exclude_checkbox = QCheckBox("Exclude query author")
         self.exclude_checkbox.setChecked(False)
-        self.exclude_checkbox.setToolTip(
-            "Don't find matches to the author you're searching for. This is useful when doing Document-to-Document searches, as a document will always have 100\% similarity to itself."
-        )
+        self.exclude_checkbox.setToolTip("If this is checked, the query author won't appear in the results.")
         param_row.addWidget(self.exclude_checkbox)
 
         param_row.addStretch(1)
@@ -283,8 +281,9 @@ class SearchPage(QWidget):
             # Extract queries from the document index
             query_vecs = self.state.active_project.doc_index.reconstruct(query_ids)
 
+            # because .search() does not handle exclude_self, we can just do it manually here
             distances, result_ids = self.state.active_project.centroid_index.search(
-                queries=query_vecs, k=k, allowed_ids=target_ids
+                queries=query_vecs, k=k + int(exclude_self), allowed_ids=target_ids
             )
         # Author2Author search
         else:
@@ -292,32 +291,22 @@ class SearchPage(QWidget):
                 query_doc_id=query_ids, k=k, exclude_self=exclude_self, allowed_ids=target_ids
             )
 
-        results = self._build_results(distances, result_ids)
-
-        # Convert to string representation to display on the left list
-        conn = self.state.active_project.database.conn
-        query_labels = [
-            f"ID #{q_id} ({conn.execute(f'SELECT author FROM {query_table} WHERE id = ?', (q_id,)).fetchone()['author']})"
-            for q_id in query_ids
-        ]
-
-        self.results_widget.populate_results(query_labels, results)
-
-    def _build_results(self, distances: np.ndarray, result_ids: np.ndarray) -> list[list[BaseResult]]:
-        """Convert raw results into nested lists of BaseResult objects.
-
-        Returns:
-            List of n_queries elements, each with k subelements.
-        """
+        # Compute llrs
         llrs = self.calibrator.compute_llr(distances)
 
         conn = self.state.active_project.database.conn
-        _, target_table = MODES_MAP[self.mode_combo.currentText()]
-
         final_results: list[list[BaseResult]] = []
+
+        # Get list of query author names
+        query_authors = [
+            conn.execute(f"SELECT author FROM {query_table} WHERE id = ?", (q_id,)).fetchone()["author"]
+            for q_id in query_ids
+        ]
+
+        # Convert results into BaseResult objects to pass to self.results_widget
         for q_idx in range(len(result_ids)):
             matches: list[BaseResult] = []
-            for rank, (res_id, score, llr) in enumerate(zip(result_ids[q_idx], distances[q_idx], llrs[q_idx])):
+            for res_id, score, llr in zip(result_ids[q_idx], distances[q_idx], llrs[q_idx]):
                 if res_id == -1:
                     # FAISS returns -1 if it couldn't find K results, so just ignore it
                     continue
@@ -326,10 +315,17 @@ class SearchPage(QWidget):
                 row = conn.execute(f"SELECT * FROM {target_table} WHERE id = ?", (int(res_id),)).fetchone()
                 meta = json.loads(row["metadata"]) or "{}"
 
+                if exclude_self and query_table == "documents" and target_table == "centroids":
+                    if row["author"] == query_authors[q_idx]:
+                        continue
+
+                # Current rank updates dynamically based on the number of matches we have accumulated
+                rank = len(matches) + 1
+
                 if target_table == "documents":
                     matches.append(
                         DocumentSearchResult(
-                            rank=rank + 1,
+                            rank=rank,
                             score=float(score),
                             llr=float(llr),
                             author=row["author"],
@@ -345,7 +341,7 @@ class SearchPage(QWidget):
                     ]
                     matches.append(
                         CentroidSearchResult(
-                            rank=rank + 1,
+                            rank=rank,
                             score=float(score),
                             llr=float(llr),
                             author=row["author"],
@@ -355,9 +351,16 @@ class SearchPage(QWidget):
                         )
                     )
 
+                if len(matches) == k:
+                    # No need to build more results if we already have K results
+                    break
+
             final_results.append(matches)
 
-        return final_results
+        # Get visual representation of query authors
+        query_labels = [f"ID #{id} ({author})" for id, author in zip(query_ids, query_authors)]
+
+        self.results_widget.populate_results(query_labels, final_results)
 
 
 class SearchResultsWidget(QWidget):
