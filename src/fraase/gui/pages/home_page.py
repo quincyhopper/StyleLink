@@ -1,10 +1,33 @@
 from __future__ import annotations
 
+import time
+
 from PySide6.QtCore import Qt, QThread, Signal, Slot
-from PySide6.QtWidgets import QGroupBox, QLabel, QProgressDialog, QPushButton, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from fraase.core.project import Project
 from fraase.gui.state import AppState
+
+
+def format_eta(seconds: float) -> str:
+    """Convert seconds ETA to human-readable string."""
+    mins, secs = divmod(int(seconds), 60)
+    hours, mins = divmod(mins, 60)
+    if hours > 0:
+        return f"{hours}h {mins:02d}m"
+    if mins > 0:
+        return f"{mins}m {secs:02d}s"
+    return f"{secs}s"
 
 
 class HomePage(QStackedWidget):
@@ -46,10 +69,26 @@ class HomePage(QStackedWidget):
         sync_box = QGroupBox("Project status")
         sync_layout = QVBoxLayout(sync_box)
         self.sync_label = QLabel()
+
         self.embed_btn = QPushButton("Create Styles")
         self.embed_btn.clicked.connect(self.on_embed_btn_clicked)
+
+        self.progress_frame = QFrame()
+        self.progress_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        prog_layout = QHBoxLayout(self.progress_frame)
+        prog_layout.setContentsMargins(10, 6, 10, 6)
+
+        self.progress_label = QLabel("Processing...")
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMinimumWidth(260)
+
+        prog_layout.addWidget(self.progress_label)
+        prog_layout.addWidget(self.progress_bar, stretch=1)
+        self.progress_frame.setVisible(False)
+
         sync_layout.addWidget(self.sync_label)
         sync_layout.addWidget(self.embed_btn)
+        sync_layout.addWidget(self.progress_frame)
 
         # Quick search option
         search_box = QGroupBox("Quick search")
@@ -75,22 +114,17 @@ class HomePage(QStackedWidget):
         self.setCurrentWidget(self.empty_view if project is None else self.project_view)
         self.update_sync_status()
 
-    def on_explore_btn_clicked(self) -> None:
-        pass
-
-    def on_search_btn_clicked(self) -> None:
-        pass
-
     def on_embed_btn_clicked(self) -> None:
         """Syncs embeddings."""
         if self.state.active_project is None:
             return
 
-        self.progress = QProgressDialog(labelText="Embedding documents...", cancelButtonText=None, minimum=0, maximum=0)
-        self.progress.setWindowTitle("Creating Styles")
-        self.progress.setWindowModality(Qt.WindowModality.WindowModal)  # Block input to
-        self.progress.setMinimumDuration(0)  # Show immediately when clicked
-        self.progress.show()
+        self.embed_btn.setEnabled(False)
+        self._embed_start = time.monotonic()
+        self.progress_frame.setVisible(True)
+        self.progress_label.setText("Loading Style creator...")
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
 
         self.worker = EmbedWorker(self.state.active_project, self)
         self.worker.progress.connect(self.on_embed_progress)
@@ -98,11 +132,21 @@ class HomePage(QStackedWidget):
         self.worker.start()
 
     def on_embed_progress(self, processed: int, total: int) -> None:
-        self.progress.setMaximum(total)
-        self.progress.setValue(processed)
+        self.progress_bar.setRange(0, max(1, total))
+        self.progress_bar.setValue(processed)
+
+        if processed == 0:
+            self._embed_start = time.monotonic()
+            self.progress_label.setText(f"Embedding documents: 0 / {total:,}")
+            return
+
+        elapsed = time.monotonic() - self._embed_start
+        eta_str = format_eta((elapsed / processed) * (total - processed))
+        self.progress_label.setText(f"Embedding documents: {processed:,} / {total:,} (~{eta_str} remaining)")
 
     def on_embed_finished(self) -> None:
-        self.progress.close()
+        self.progress_frame.setVisible(False)
+        self.embed_btn.setEnabled(True)
         self.update_sync_status()
 
     def update_sync_status(self) -> None:

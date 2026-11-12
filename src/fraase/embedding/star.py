@@ -138,6 +138,8 @@ class STAR:
 
         all_embeddings: list[np.ndarray] = []
         total = len(texts)
+        if progress_callback:
+            progress_callback(0, total)
 
         for start_idx in range(0, total, batch_size):
             batch_texts = list(texts[start_idx : start_idx + batch_size])
