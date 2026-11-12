@@ -13,7 +13,7 @@ class VectorIndex:
     def __init__(self) -> None:
         """Initialise empty FAISS index."""
         self.dimension = 1024
-        base_index = faiss.IndexFlatL2(self.dimension)
+        base_index = faiss.IndexFlatIP(self.dimension)
         self.index = faiss.IndexIDMap2(base_index)
 
     @property
