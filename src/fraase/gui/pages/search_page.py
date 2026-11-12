@@ -3,28 +3,28 @@ from __future__ import annotations
 import json
 from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
-    QListWidgetItem,
     QPushButton,
     QSpinBox,
+    QSplitter,
     QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
     QTabWidget,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from fraase.core.project import Project
 from fraase.embedding.calibrator import LLRCalibrator
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
@@ -45,6 +45,8 @@ class BaseResult:
     score: float
     llr: float | None
     author: str
+
+    HEADERS: ClassVar[list[str]]
 
     @abstractmethod
     def to_table_row(self) -> list[str]:
@@ -116,7 +118,7 @@ class CentroidSearchResult(BaseResult):
 
     def to_table_row(self) -> list[str]:
         llr_str = f"{self.llr:.3f}" if self.llr is not None else "N/A"
-        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author]
+        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author, self.doc_count]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -261,11 +263,6 @@ class SearchPage(QWidget):
         self.steps_tab.setCurrentWidget(self.results_stack)
         self.results_stack.setCurrentWidget(self.results_widget)
 
-    @Slot()
-    def _on_query_row_selected(self, row_idx: int) -> None:
-        """Update the results view to show the selected query and its matches."""
-        pass
-
     def run_search(self) -> None:
         """Peform a vector search given the currently selected parameters."""
         # Retrieve all the parameters of the search
@@ -297,6 +294,65 @@ class SearchPage(QWidget):
                 query_doc_id=query_ids, k=k, exclude_self=exclude_self, allowed_ids=target_ids
             )
 
+        results = self._build_results(distances, result_ids)
+
+        # Convert to string representation to display on the left list
+        query_labels = [f"ID #{id}" for id in query_ids]
+
+        self.results_widget.populate_results(query_labels, results)
+
+    def _build_results(self, distances: np.ndarray, result_ids: np.ndarray) -> list[list[BaseResult]]:
+        """Convert raw results into nested lists of BaseResult objects.
+
+        Returns:
+            List of n_queries elements, each with k subelements.
+        """
+        llrs = self.calibrator.compute_llr(distances)
+
+        conn = self.state.active_project.database.conn
+        _, target_table = MODES_MAP[self.mode_combo.currentText()]
+
+        final_results: list[list[BaseResult]] = []
+        for q_idx in range(len(result_ids)):
+            matches: list[BaseResult] = []
+            for rank, (res_id, score, llr) in enumerate(zip(result_ids[q_idx], distances[q_idx], llrs[q_idx])):
+                if res_id == -1:
+                    # FAISS returns -1 if it couldn't find K results, so just ignore it
+                    continue
+
+                # Get the database info for this match
+                row = conn.execute(f"SELECT * FROM {target_table} WHERE id = ?", (int(res_id),)).fetchone()
+                meta = json.loads(row["metadata"]) or "{}"
+
+                if target_table == "documents":
+                    matches.append(
+                        DocumentSearchResult(
+                            rank=rank,
+                            score=float(score),
+                            llr=float(llr),
+                            author=row["author"],
+                            id=int(res_id),
+                            text=row["text"],
+                            metadata=meta,
+                        )
+                    )
+                else:
+                    matches.append(
+                        CentroidSearchResult(
+                            rank=rank,
+                            score=float(score),
+                            llr=float(llr),
+                            author=row["author"],
+                            id=res_id,
+                            doc_count=row["doc_count"],
+                            metadata=meta,
+                        )
+                    )
+
+            final_results.append(matches)
+
+        return final_results
+
 
 class SearchResultsWidget(QWidget):
     """Widget for displaying the search results.
@@ -305,12 +361,73 @@ class SearchResultsWidget(QWidget):
     For each query text, the k results are shown in the central results box
     """
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
+        self._results: list[list[BaseResult]] = []  # List for every query, k sublists
+        self._build_ui()
 
     def _build_ui(self) -> None:
-        self.query_list = QListWidget(self)
+        layout = QVBoxLayout(self)
+        splitter = QSplitter(Qt.Orientation.Horizontal, self)
 
-    def populate_results(self, results: BaseResult) -> None:
+        # Left query list
+        self.query_list = QListWidget()
+        self.query_list.currentRowChanged.connect(self._on_query_selected)
+        splitter.addWidget(self.query_list)
+
+        # Middle top K matches table
+        self.matches_table = QTableWidget()
+        self.matches_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)  # Allow user to select rows
+        self.matches_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)  # Immutable table
+        self.matches_table.horizontalHeader().setStretchLastSection(True)
+        self.matches_table.currentCellChanged.connect(self._on_match_selected)
+        splitter.addWidget(self.matches_table)
+
+        # Right match inspector
+        self.inspector = QTextEdit()
+        self.inspector.setReadOnly(True)
+        splitter.addWidget(self.inspector)
+
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(2, 2)
+        layout.addWidget(splitter)
+
+    @Slot(int)
+    def _on_query_selected(self, query_idx: int) -> None:
+
+        # Clear middle and right
+        self.matches_table.clear()
+        self.inspector.clear()
+        if query_idx < 0 or query_idx >= len(self._results):
+            return
+
+        matches = self._results[query_idx]  # Access sublist full of k results
+        if not matches:
+            return
+
+        headers = matches[0].HEADERS
+        self.matches_table.setColumnCount(len(headers))
+        self.matches_table.setHorizontalHeaderLabels(headers)
+        self.matches_table.setRowCount(len(matches))
+
+        # Populate table
+        for row_idx, match in enumerate(matches):
+            for col_idx, val in enumerate(match.to_table_row()):
+                self.matches_table.setItem(row_idx, col_idx, QTableWidgetItem(val))
+
+        self.matches_table.selectRow(0)
+
+    @Slot(int)
+    def _on_match_selected(self, row_idx: int, *_) -> None:
+        query_idx = self.query_list.currentRow()
+        if 0 <= query_idx < len(self._results) and 0 <= row_idx < len(self._results[query_idx]):
+            self.inspector.setText(self._results[query_idx][row_idx].to_inspector_text())
+
+    def populate_results(self, query_labels: list[str], results: list[list[BaseResult]]) -> None:
         """Fill the results widget with the results."""
-        pass
+        self._results = results
+        self.query_list.clear()
+        self.query_list.addItems(query_labels)
+        if query_labels:
+            self.query_list.setCurrentRow(0)
