@@ -279,7 +279,6 @@ class SearchPage(QWidget):
             distances, result_ids = self.state.active_project.doc_index.search_by_id(
                 query_doc_id=query_ids, k=k, exclude_self=exclude_self, allowed_ids=target_ids
             )
-            print("Done")
         # Doc2Author search
         elif query_table == "documents" and target_table == "centroids":
             # Extract queries from the document index
