@@ -97,6 +97,7 @@ class Project:
         embeddings = self.embedder.embed_texts(texts=texts, progress_callback=progress_callback)
         self.embedder.release()
         self.doc_index.add(embeddings, ids)
+        self.doc_index.save(self.project_dir / self.DOC_INDEX_FILENAME)
 
         # TODO: build centroids
 
