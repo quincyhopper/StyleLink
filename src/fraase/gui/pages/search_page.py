@@ -111,13 +111,13 @@ class CentroidSearchResult(BaseResult):
     id: int
     author: str
     doc_count: int
-    metadata: dict
+    sample_texts: list[str]  # A few lines of each of this author's texts
 
     HEADERS = ["Rank", "Score", "LLR", "ID", "Author", "Doc Count"]
 
     def to_table_row(self) -> list[str]:
         llr_str = f"{self.llr:.3f}" if self.llr is not None else "N/A"
-        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author, self.doc_count]
+        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author, str(self.doc_count)]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -130,8 +130,8 @@ class CentroidSearchResult(BaseResult):
         }
 
     def to_inspector_text(self) -> str:
-        # TODO: this could be a concatenation of say a few lines of each text that makes up the centroid??
-        pass
+        snippets = "\n\n---\n\n".join("\n".join(t.splitlines()[:3])[:300] for t in self.sample_texts)
+        return f"Author: {self.author} ({self.doc_count} documents)\n\n--- Sample Texts ---\n{snippets}"
 
 
 class SearchPage(QWidget):
@@ -339,6 +339,10 @@ class SearchPage(QWidget):
                         )
                     )
                 else:
+                    sample_texts = [
+                        r["text"]
+                        for r in conn.execute("SELECT text FROM documents WHERE author = ? LIMIT 5", (row["author"],))
+                    ]
                     matches.append(
                         CentroidSearchResult(
                             rank=rank + 1,
@@ -347,7 +351,7 @@ class SearchPage(QWidget):
                             author=row["author"],
                             id=res_id,
                             doc_count=row["doc_count"],
-                            metadata=meta,
+                            sample_texts=sample_texts,
                         )
                     )
 
