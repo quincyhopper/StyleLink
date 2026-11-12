@@ -29,9 +29,12 @@ class LLRCalibrator:
         if scores.size == 0:
             raise ValueError("Scores cannot be empty")
 
-        # Flatten otherwise sklearn will interpret k as features instead of scores
-        flat = scores.reshape(-1, 1)
-        llrs = self.model.decision_function(flat) / np.log(10)
+        llrs = np.full(scores.shape, np.nan, dtype=np.float32)
+        valid = ~np.isnan(scores)  # NaN scores (from VectorIndex.search_by_id) cannot have llrs
 
-        # Reshape back to original shape
-        return np.asarray(llrs, dtype=np.float32).reshape(scores.shape)
+        if np.any(valid):
+            # Flatten otherwise sklearn will interpret k as features instead of scores
+            flat = scores[valid].reshape(-1, 1)
+            llrs[valid] = self.model.decision_function(flat) / np.log(10)
+
+        return llrs
