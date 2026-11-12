@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QListWidget,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QSplitter,
@@ -255,8 +256,11 @@ class SearchPage(QWidget):
 
     @Slot()
     def _on_search_btn_clicked(self) -> None:
-        # TODO: display any errors with input (i.e. no query, index empty, etc)
-        self.run_search()
+        try:
+            self.run_search()
+        except (ValueError, KeyError, RuntimeError) as err:
+            QMessageBox.warning(self, "Cannot run search", str(err))
+            return
         self.steps_tab.setCurrentWidget(self.results_stack)
         self.results_stack.setCurrentWidget(self.results_widget)
 
@@ -267,6 +271,16 @@ class SearchPage(QWidget):
         target_ids = self.target_table.get_effective_ids()
         k: int = self.k_spinbox.value()
         exclude_self: bool = self.exclude_checkbox.isChecked()
+
+        # A few checks before we begin the search
+        if not self.state.active_project.is_synced:
+            raise RuntimeError(
+                "Not all documents/authors have Styles. Please run Create Styles on the Home Page first."
+            )
+        if not query_ids:
+            raise ValueError("No queries selected. Please select at least one query in the Define Queries tab.")
+        if not target_ids:
+            raise ValueError("No targets selected. Please select at least one target in the Define Targets tab.")
 
         # Determine which FAISS indexes we need to use
         query_table, target_table = MODES_MAP[self.mode_combo.currentText()]
