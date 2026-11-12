@@ -5,7 +5,6 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
-import numpy as np
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -186,7 +185,7 @@ class SearchPage(QWidget):
 
         # K parameter selector
         param_row.addSpacing(8)
-        k_label = QLabel("Top k: ")
+        k_label = QLabel("Number of matches to find: ")
         k_label.setStyleSheet("font-weight: bold;")
         param_row.addWidget(k_label)
         self.k_spinbox = QSpinBox()

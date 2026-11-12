@@ -51,6 +51,10 @@ class MainWindow(QMainWindow):
         self.explore_page = ExplorePage(state=self.state, parent=self)
         self.search_page = SearchPage(state=self.state, parent=self)
 
+        # Connect quick search button
+        self.home_page.quick_search_requested.connect(lambda: self.navigate_to(PageID.SEARCH))
+        self.home_page.quick_search_requested.connect(self.search_page._on_search_btn_clicked)
+
         # Dictionary holding the page index and page widget.
         # Useful for self.navigate_to(page_id)
         self.page_widgets: dict[PageID, QWidget] = {

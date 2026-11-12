@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QThread, Signal, Slot
-from PySide6.QtWidgets import QLabel, QProgressDialog, QPushButton, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGroupBox, QLabel, QProgressDialog, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
 from fraase.core.project import Project
 from fraase.gui.state import AppState
@@ -10,13 +10,16 @@ from fraase.gui.state import AppState
 class HomePage(QStackedWidget):
     """Landing page."""
 
+    # Quick document-to-document search
+    quick_search_requested = Signal()
+
     def __init__(self, state: AppState) -> None:
         super().__init__()
         self.state = state
 
         # The home page will contain 2 views:
         # - If there is NO active project: empty page
-        # - If there is an active project: Explore and Search button
+        # - If there is a project, some buttons
 
         self.empty_view = self.init_empty_view()
         self.project_view = self.init_project_view()
@@ -39,21 +42,30 @@ class HomePage(QStackedWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
 
-        explore_btn = QPushButton("Explore")
-        explore_btn.clicked.connect(self.on_explore_btn_clicked)
-
-        search_btn = QPushButton("Search")
-        search_btn.clicked.connect(self.on_search_btn_clicked)
-
-        embed_btn = QPushButton("Create Styles")
-        embed_btn.clicked.connect(self.on_embed_btn_clicked)
-
-        # Shows whether database and FAISS are synced or not
+        # Sync section
+        sync_box = QGroupBox("Project status")
+        sync_layout = QVBoxLayout(sync_box)
         self.sync_label = QLabel()
+        self.embed_btn = QPushButton("Create Styles")
+        self.embed_btn.clicked.connect(self.on_embed_btn_clicked)
+        sync_layout.addWidget(self.sync_label)
+        sync_layout.addWidget(self.embed_btn)
 
-        layout.addWidget(explore_btn)
-        layout.addWidget(search_btn)
-        layout.addWidget(embed_btn)
+        # Quick search option
+        search_box = QGroupBox("Quick search")
+        search_layout = QVBoxLayout(search_box)
+        search_info = QLabel(
+            "Go to the Search page to perform a custom search, or press below "
+            "to compare all document styles against each other."
+        )
+        quick_search_btn = QPushButton("Quick search")
+        quick_search_btn.clicked.connect(self.quick_search_requested.emit)
+        search_layout.addWidget(search_info)
+        search_layout.addWidget(quick_search_btn)
+
+        layout.addWidget(sync_box)
+        layout.addWidget(search_box)
+        layout.addStretch()
 
         return page
 
@@ -98,8 +110,14 @@ class HomePage(QStackedWidget):
         if self.state.active_project is None:
             return
 
-        synced = self.state.active_project.is_synced
-        self.sync_label.setText("Index: In sync" if synced else "Index: Out of sync")
+        if self.state.active_project.is_synced:
+            self.sync_label.setText("All documents and authors have Styles. Perform a search when ready!")
+            self.embed_btn.setVisible(False)
+        else:
+            self.embed_btn.setVisible(True)
+            self.sync_label.setText(
+                "Some documents or authors dont't have Styles. Create them with the Create Styles button."
+            )
 
 
 class EmbedWorker(QThread):
