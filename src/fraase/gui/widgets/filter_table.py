@@ -86,7 +86,7 @@ class SqlTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.rows = rows
         self.core_fields = set(core_fields)
-        self.columns = core_fields + meta_keys
+        self.columns = [f for f in core_fields if f != "text"] + meta_keys
         self.endResetModel()
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
