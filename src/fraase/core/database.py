@@ -121,7 +121,7 @@ class DocumentsTable:
     def count(self) -> int:
         """Return the total number of documents in database."""
         row = self._conn.execute("SELECT COUNT(*) FROM documents").fetchone()
-        return row
+        return row[0]
 
     def get_all(self) -> list[sqlite3.Row]:
         """Return id and text for all documents."""
