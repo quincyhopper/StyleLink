@@ -251,11 +251,12 @@ class SqlFilterTable(QWidget):
 
     def set_table(self, table: str) -> None:
         """Switch the active SQLite table (documents, centroids)."""
-        if table == self.table:
+        if table == self.table_name:
             return
         self.table_name = table
         self.core_fields = TABLE_FIELDS[table]
         self.meta_keys = self._discover_meta_keys()
+        self.radio_all.setChecked(True)  # Reset to "All filtered rows" when we switch to Author-to-Author search mode
         self._clear_rules()
         self.refresh()
 
