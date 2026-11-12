@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from fraase.gui.main_window import MainWindow
@@ -13,6 +14,7 @@ def main() -> int:
         exit code.
     """
     app = QApplication()
+    app.styleHints().setColorScheme(Qt.ColorScheme.Light)
     state = AppState()
 
     window = MainWindow(state=state)
