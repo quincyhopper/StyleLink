@@ -95,7 +95,6 @@ class DocumentSearchResult(BaseResult):
 
     def to_inspector_text(self) -> str:
         return (
-            f"Rank #{self.rank} | Sim: {self.score:.4f}\n"
             f"Author: {self.author}\n\n"
             f"--- Full Text ---\n{self.text}\n\n"
             f"--- Metadata ---\n{json.dumps(self.metadata, indent=2)}"
@@ -296,7 +295,11 @@ class SearchPage(QWidget):
         results = self._build_results(distances, result_ids)
 
         # Convert to string representation to display on the left list
-        query_labels = [f"ID #{id}" for id in query_ids]
+        conn = self.state.active_project.database.conn
+        query_labels = [
+            f"ID #{q_id} ({conn.execute(f'SELECT author FROM {query_table} WHERE id = ?', (q_id,)).fetchone()['author']})"
+            for q_id in query_ids
+        ]
 
         self.results_widget.populate_results(query_labels, results)
 
@@ -326,7 +329,7 @@ class SearchPage(QWidget):
                 if target_table == "documents":
                     matches.append(
                         DocumentSearchResult(
-                            rank=rank,
+                            rank=rank + 1,
                             score=float(score),
                             llr=float(llr),
                             author=row["author"],
@@ -338,7 +341,7 @@ class SearchPage(QWidget):
                 else:
                     matches.append(
                         CentroidSearchResult(
-                            rank=rank,
+                            rank=rank + 1,
                             score=float(score),
                             llr=float(llr),
                             author=row["author"],
