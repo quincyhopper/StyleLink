@@ -82,9 +82,13 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu("&File")
         new_project_action = self.file_menu.addAction("New Project")
         new_project_action.triggered.connect(self.on_new_project)
+
         self.file_menu.addSeparator()
+
         open_project_action = self.file_menu.addAction("Open")
         open_project_action.triggered.connect(self.on_open_project)
+        self.add_dataset_action = self.file_menu.addAction("Add new file")
+        self.add_dataset_action.triggered.connect(lambda: NewProjectDialog(state=self.state, add_to_active=True).exec())
 
         self.file_menu.addSeparator()
 
@@ -125,6 +129,7 @@ class MainWindow(QMainWindow):
         self.search_menu.setVisible(has_project)
         self.setWindowTitle(f"FRAASE - {project.project_dir.name}" if project else "FRAASE")
         self.delete_project_action.setVisible(has_project)
+        self.add_dataset_action.setVisible(has_project)
 
     @Slot()
     def on_new_project(self) -> None:

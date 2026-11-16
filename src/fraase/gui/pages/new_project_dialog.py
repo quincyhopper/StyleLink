@@ -31,10 +31,17 @@ from fraase.utils.file import preview_file, read_file
 class NewProjectDialog(QDialog):
     """Dialog for importing a new project."""
 
-    def __init__(self, state: AppState) -> None:
+    def __init__(self, state: AppState, add_to_active: bool = False) -> None:
+        """Initialise new project dialog.
+
+        Args:
+            state: the app state.
+            add_to_active: if True, add new file to existing project.
+        """
         super().__init__()
         self.setWindowTitle("New Project")
         self.state = state
+        self.add_to_active = add_to_active
         self.build_ui()
 
     def build_ui(self) -> None:
@@ -49,10 +56,11 @@ class NewProjectDialog(QDialog):
         form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)  # use full width
 
         # Project name
-        self.project_name = QLineEdit()
-        self.project_name.setPlaceholderText("Choose a name for the new project")
-        self.project_name.textChanged.connect(self.validate_form)
-        form.addRow("New project name:", self.project_name)
+        if not self.add_to_active:
+            self.project_name = QLineEdit()
+            self.project_name.setPlaceholderText("Choose a name for the new project")
+            self.project_name.textChanged.connect(self.validate_form)
+            form.addRow("New project name:", self.project_name)
 
         # Importing
         file_row = QHBoxLayout()
@@ -110,7 +118,11 @@ class NewProjectDialog(QDialog):
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(self.on_cancel_btn_clicked)
 
-        self.create_btn = QPushButton("Create Project")
+        self.create_btn = QPushButton()
+        if self.add_to_active:
+            self.create_btn.setText("Add file to project")
+        else:
+            self.create_btn.setText("Create project")
         self.create_btn.clicked.connect(self.on_create_btn_clicked)
         self.create_btn.setProperty("primary", True)
         self.create_btn.setEnabled(False)
@@ -121,7 +133,7 @@ class NewProjectDialog(QDialog):
 
     def validate_form(self) -> None:
         """Enable Create Project button only when project name and file are valid."""
-        has_name = bool(self.project_name.text().strip())
+        has_name = self.add_to_active or bool(self.project_name.text().strip())
         has_file = bool(self.file_name.text().strip())
         cols_different = self.text_combo.currentText() != self.author_combo.currentText()
 
@@ -166,12 +178,7 @@ class NewProjectDialog(QDialog):
     @Slot()
     def on_create_btn_clicked(self) -> None:
         """Create new project given the inputs."""
-        # The project directory will just have the project name
-        project_dir = PROJECT_DIR / self.project_name.text().strip()
-
-        # Create the project
         source_file = Path(self.file_name.text())
-        project = Project.create(project_dir=project_dir)
 
         author_col = self.author_combo.currentText()
         text_col = self.text_combo.currentText()
@@ -185,11 +192,15 @@ class NewProjectDialog(QDialog):
 
                 yield row
 
-        # Populate database
-        project.database.docs_table.add(mapped_rows())
-
-        # Set the active project to the new project
-        self.state.open_project(project_dir=project_dir)
+        if self.add_to_active:
+            project = self.state.active_project
+            project.database.docs_table.add(mapped_rows())
+            self.state.project_changed.emit(project)
+        else:
+            project_dir = PROJECT_DIR / self.project_name.text().strip()
+            project = Project.create(project_dir=project_dir)
+            project.database.docs_table.add(mapped_rows())
+            self.state.open_project(project_dir=project_dir)
 
         # Close the dialog box successfully
         self.accept()
