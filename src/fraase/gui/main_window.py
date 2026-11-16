@@ -85,10 +85,6 @@ class MainWindow(QMainWindow):
         open_project_action = self.file_menu.addAction("Open")
         open_project_action.triggered.connect(self.on_open_project)
         self.file_menu.addSeparator()
-        save_project_action = self.file_menu.addAction("Save")
-        # save_project_action.triggered.connect()
-        saveas_project_action = self.file_menu.addAction("Save as")
-        # saveas_project_action.triggered.connect()
 
         # The Explore and Search menus appear only when a project is active
         self.explore_menu = self.menuBar().addAction("&Explore")
