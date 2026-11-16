@@ -12,7 +12,7 @@ class ExplorePage(QWidget):
     def __init__(self, state: AppState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = state
-        self.table = SqlFilterTable(parent=self)
+        self.table = SqlFilterTable(parent=self, show_selection_scope=False)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.table)

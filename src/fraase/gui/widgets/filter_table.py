@@ -155,13 +155,18 @@ class SqlFilterTable(QWidget):
     selection_changed = Signal()
 
     def __init__(
-        self, database: Database | None = None, table: str = "documents", parent: QWidget | None = None
+        self,
+        database: Database | None = None,
+        table: str = "documents",
+        show_selection_scope: bool = True,
+        parent: QWidget | None = None,
     ) -> None:
         """Initialise the SQL table viewer.
 
         Args:
             database: instance of a database.
             table: "documents" or "centroids".
+            show_selection_scope: if True, display the "All filtered rows" vs. "Highlighted rows only" radio.
             parent: parent widget.
 
         Raises:
@@ -175,6 +180,8 @@ class SqlFilterTable(QWidget):
         self.db: Database | None = None
         self.meta_keys: list[str] = []  # Will scan the db to find these
         self._rule_rows: list[FilterRuleRow] = []  # List of filter rows above the SQL viewer
+
+        self.show_selection_scope = show_selection_scope
 
         self.build_ui()
         if database is not None:
@@ -205,6 +212,8 @@ class SqlFilterTable(QWidget):
         self.radio_all = QRadioButton("All filtered rows (0)")
         self.radio_all.setChecked(True)  # Filtered rows are default
         self.radio_selected = QRadioButton("Highlighted rows only (0)")
+        self.radio_all.setVisible(self.show_selection_scope)  # Hide if we're on the explore page
+        self.radio_selected.setVisible(self.show_selection_scope)
 
         # Group the options into buttons
         self.scope_group = QButtonGroup(self)
