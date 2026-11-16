@@ -218,8 +218,8 @@ class SearchPage(QWidget):
         self.query_table = SqlFilterTable(table="documents", parent=self)
         self.target_table = SqlFilterTable(table="documents", parent=self)
 
-        self.steps_tab.addTab(self.query_table, "Define queries")
-        self.steps_tab.addTab(self.target_table, "Define targets")
+        self.steps_tab.addTab(self.query_table, "Search Items")
+        self.steps_tab.addTab(self.target_table, "Comparison Items")
         self.steps_tab.addTab(self._build_results_tab(), "Results")
 
         layout.addWidget(self.steps_tab)
@@ -279,9 +279,9 @@ class SearchPage(QWidget):
                 "Not all documents/authors have Styles. Please run Create Styles on the Home Page first."
             )
         if not query_ids:
-            raise ValueError("No queries selected. Please select at least one query in the Define Queries tab.")
+            raise ValueError("No search items selected. Please select at least one in the Search Items tab.")
         if not target_ids:
-            raise ValueError("No targets selected. Please select at least one target in the Define Targets tab.")
+            raise ValueError("No comparison items selected. Please select at least one in the Comparison Items tab.")
 
         # Determine which FAISS indexes we need to use
         query_table, target_table = MODES_MAP[self.mode_combo.currentText()]
@@ -394,14 +394,6 @@ class SearchResultsWidget(QWidget):
         layout = QVBoxLayout(self)
         splitter = QSplitter(Qt.Orientation.Horizontal, self)
 
-        # Button for exporting to csv
-        top_bar = QHBoxLayout()
-        top_bar.addStretch()
-        export_btn = QPushButton("Export to CSV...")
-        export_btn.clicked.connect(self._on_export_btn_clicked)
-        top_bar.addWidget(export_btn)
-        layout.addLayout(top_bar)
-
         def _pane(title: str, widget: QWidget) -> QGroupBox:
             """Helper function for grouping a pane with a title on top."""
             box = QGroupBox(title)
@@ -430,6 +422,14 @@ class SearchResultsWidget(QWidget):
         splitter.setStretchFactor(1, 2)
         splitter.setStretchFactor(2, 2)
         layout.addWidget(splitter)
+
+        # Button for exporting to csv
+        top_bar = QHBoxLayout()
+        top_bar.addStretch()
+        export_btn = QPushButton("Export to CSV...")
+        export_btn.clicked.connect(self._on_export_btn_clicked)
+        top_bar.addWidget(export_btn)
+        layout.addLayout(top_bar)
 
     def populate_results(self, query_labels: list[str], results: list[list[BaseResult]]) -> None:
         """Fill the results widget with the results."""
