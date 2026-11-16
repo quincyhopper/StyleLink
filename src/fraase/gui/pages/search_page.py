@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -75,12 +76,12 @@ class DocumentSearchResult(BaseResult):
     text: str
     metadata: dict
 
-    HEADERS = ["Rank", "Score", "LLR", "ID", "Author", "Text Preview"]
+    HEADERS = ["Rank", "Score", "LLR", "ID", "Author"]
 
     def to_table_row(self) -> list[str]:
         llr_str = f"{self.llr:.3f}" if self.llr is not None else "N/A"
-        preview = self.text.replace("\n", " ")[:85]  # No need to display the full text
-        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author, preview]
+        # preview = self.text.replace("\n", " ")[:85]  # No need to display the full text
+        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -392,10 +393,16 @@ class SearchResultsWidget(QWidget):
         layout = QVBoxLayout(self)
         splitter = QSplitter(Qt.Orientation.Horizontal, self)
 
+        def _pane(title: str, widget: QWidget) -> QGroupBox:
+            """Helper function for grouping a pane with a title on top."""
+            box = QGroupBox(title)
+            QVBoxLayout(box).addWidget(widget)
+            return box
+
         # Left query list
         self.query_list = QListWidget()
         self.query_list.currentRowChanged.connect(self._on_query_selected)
-        splitter.addWidget(self.query_list)
+        splitter.addWidget(_pane("Searched items", self.query_list))
 
         # Middle top K matches table
         self.matches_table = QTableWidget()
@@ -403,12 +410,12 @@ class SearchResultsWidget(QWidget):
         self.matches_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)  # Immutable table
         self.matches_table.horizontalHeader().setStretchLastSection(True)
         self.matches_table.currentCellChanged.connect(self._on_match_selected)
-        splitter.addWidget(self.matches_table)
+        splitter.addWidget(_pane("Closest matches", self.matches_table))
 
         # Right match inspector
         self.inspector = QTextEdit()
         self.inspector.setReadOnly(True)
-        splitter.addWidget(self.inspector)
+        splitter.addWidget(_pane("Match details", self.inspector))
 
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 2)
