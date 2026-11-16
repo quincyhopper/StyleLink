@@ -156,12 +156,18 @@ class HomePage(QStackedWidget):
 
         if self.state.active_project.is_synced:
             self.sync_label.setText("All documents and authors have Styles. Perform a search when ready!")
+            self.sync_label.setStyleSheet("")  # Return to default colours
             self.embed_btn.setVisible(False)
         else:
             self.embed_btn.setVisible(True)
+
+            docs_total = self.state.active_project.database.docs_table.count()
+            indexed_docs = self.state.active_project.doc_index.ntotal
+
             self.sync_label.setText(
-                "Some documents or authors dont't have Styles. Create them with the Create Styles button."
+                f"{indexed_docs}/{docs_total} documents are missing Styles. Create them with the button below:"
             )
+            self.sync_label.setStyleSheet("color: #d32f2f;")
 
 
 class EmbedWorker(QThread):

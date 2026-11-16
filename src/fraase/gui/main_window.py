@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
 
         # The Explore and Search menus appear only when a project is active
-        self.explore_menu = self.menuBar().addAction("&Explore")
+        self.explore_menu = self.menuBar().addAction("&Explore documents")
         self.explore_menu.triggered.connect(lambda: self.navigate_to(PageID.EXPLORE))
 
         self.search_menu = self.menuBar().addAction("&Search")

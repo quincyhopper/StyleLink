@@ -243,7 +243,7 @@ class SqlFilterTable(QWidget):
         self.insp_meta.setMaximumHeight(140)
         insp_layout.addWidget(QLabel("Full Text:"))
         insp_layout.addWidget(self.insp_text, 2)
-        insp_layout.addWidget(QLabel("Metadata JSON:"))
+        insp_layout.addWidget(QLabel("Metadata:"))
         insp_layout.addWidget(self.insp_meta, 1)
         splitter.addWidget(inspector)
 
