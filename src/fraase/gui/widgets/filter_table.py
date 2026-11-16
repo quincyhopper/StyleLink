@@ -204,7 +204,7 @@ class SqlFilterTable(QWidget):
 
         # Status bar
         bar = QHBoxLayout()
-        self.count_lbl = QLabel(f"0 {self.table_name}")
+        self.count_lbl = QLabel(f"0 {'authors' if self.table_name == 'centroids' else self.table_name}")
         bar.addWidget(self.count_lbl)
         bar.addStretch()
 
@@ -325,7 +325,7 @@ class SqlFilterTable(QWidget):
             rows.append(d)
 
         self.model.set_data(rows, self.core_fields, self.meta_keys)
-        self.count_lbl.setText(f"{len(rows):,} {self.table_name}")
+        self.count_lbl.setText(f"{len(rows):,} {'authors' if self.table_name == 'centroids' else self.table_name}")
         self.radio_all.setText(f"All filtered rows ({len(rows)})")
         self._on_row_selected()
         self.selection_changed.emit()
