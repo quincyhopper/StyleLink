@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QSettings, Signal
+from PySide6.QtCore import QObject, QSettings, QStandardPaths, Signal
 
 from fraase.core.project import Project
 from fraase.embedding.star import STAR
+
+PROJECT_DIR = (
+    Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation)) / "fraase" / "projects"
+)
 
 
 class AppState(QObject):

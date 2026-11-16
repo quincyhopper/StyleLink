@@ -12,7 +12,7 @@ from fraase.gui.pages.explore_page import ExplorePage
 from fraase.gui.pages.home_page import HomePage
 from fraase.gui.pages.new_project_dialog import NewProjectDialog
 from fraase.gui.pages.search_page import SearchPage
-from fraase.gui.state import AppState
+from fraase.gui.state import PROJECT_DIR, AppState
 
 MENUBAR_STYLESHEET_PATH = Path(__file__).parent / "static" / "styles" / "menu_bar.qss"
 
@@ -137,6 +137,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_open_project(self) -> None:
         """Open an existing project."""
-        project_dir = QFileDialog.getExistingDirectory(self, "Open a project folder")
+        PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+        project_dir = QFileDialog.getExistingDirectory(self, "Open a project folder", dir=str(PROJECT_DIR))
         if project_dir:
             self.state.open_project(Path(project_dir))

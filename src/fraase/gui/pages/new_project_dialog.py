@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from fraase.core.project import Project
-from fraase.gui.state import AppState
+from fraase.gui.state import PROJECT_DIR, AppState
 from fraase.utils.file import preview_file, read_file
 
 
@@ -167,7 +167,7 @@ class NewProjectDialog(QDialog):
     def on_create_btn_clicked(self) -> None:
         """Create new project given the inputs."""
         # The project directory will just have the project name
-        project_dir = Path(self.project_name.text())
+        project_dir = PROJECT_DIR / self.project_name.text().strip()
 
         # Create the project
         source_file = Path(self.file_name.text())
