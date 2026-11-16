@@ -7,7 +7,6 @@ from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QStackedWidget, QWidget
 
 from fraase import __version__
-from fraase.gui.pages.docs_page import DocsPage
 from fraase.gui.pages.explore_page import ExplorePage
 from fraase.gui.pages.home_page import HomePage
 from fraase.gui.pages.new_project_dialog import NewProjectDialog
@@ -21,9 +20,8 @@ class PageID(IntEnum):
     """Enumeration of page indices/IDs."""
 
     HOME = 0
-    DOCS = 1
-    EXPLORE = 2
-    SEARCH = 3
+    EXPLORE = 1
+    SEARCH = 2
 
 
 class MainWindow(QMainWindow):
@@ -47,7 +45,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.page_stack)
 
         self.home_page = HomePage(state=self.state)
-        self.docs_page = DocsPage()
         self.explore_page = ExplorePage(state=self.state, parent=self)
         self.search_page = SearchPage(state=self.state, parent=self)
 
@@ -59,7 +56,6 @@ class MainWindow(QMainWindow):
         # Useful for self.navigate_to(page_id)
         self.page_widgets: dict[PageID, QWidget] = {
             PageID.HOME: self.home_page,
-            PageID.DOCS: self.docs_page,
             PageID.EXPLORE: self.explore_page,
             PageID.SEARCH: self.search_page,
         }
@@ -93,10 +89,6 @@ class MainWindow(QMainWindow):
         # save_project_action.triggered.connect()
         saveas_project_action = self.file_menu.addAction("Save as")
         # saveas_project_action.triggered.connect()
-
-        # Docs menu
-        self.docs_menu = self.menuBar().addAction("&Docs")
-        # self.docs_menu.triggered.connect()
 
         # The Explore and Search menus appear only when a project is active
         self.explore_menu = self.menuBar().addAction("&Explore")
