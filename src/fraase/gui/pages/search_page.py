@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from fraase.embedding.calibrator import LLRCalibrator
+from fraase.embedding.calibrator import LLRCalibrator, llr_to_verbal
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
 
@@ -78,12 +78,13 @@ class DocumentSearchResult(BaseResult):
     text: str
     metadata: dict
 
-    HEADERS = ["Rank", "Score", "LLR", "ID", "Author"]
+    HEADERS = ["Rank", "ID", "Author", "Score", "LLR", "Verbal"]
 
     def to_table_row(self) -> list[str]:
         llr_str = f"{self.llr:.3f}" if self.llr is not None else "N/A"
+        verbal = llr_to_verbal(self.llr)
         # preview = self.text.replace("\n", " ")[:85]  # No need to display the full text
-        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author]
+        return [str(self.rank), str(self.id), self.author, f"{self.score:.4f}", llr_str, verbal]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -115,11 +116,12 @@ class CentroidSearchResult(BaseResult):
     doc_count: int
     sample_texts: list[str]  # A few lines of each of this author's texts
 
-    HEADERS = ["Rank", "Score", "LLR", "ID", "Author", "Doc Count"]
+    HEADERS = ["Rank", "ID", "Author", "Doc count", "Score", "LLR", "Verbal"]
 
     def to_table_row(self) -> list[str]:
         llr_str = f"{self.llr:.3f}" if self.llr is not None else "N/A"
-        return [str(self.rank), f"{self.score:.4f}", llr_str, str(self.id), self.author, str(self.doc_count)]
+        verbal = llr_to_verbal(self.llr)
+        return [str(self.rank), str(self.id), self.author, str(self.doc_count), f"{self.score:.4f}", llr_str, verbal]
 
     def to_dict(self) -> dict[str, Any]:
         return {
