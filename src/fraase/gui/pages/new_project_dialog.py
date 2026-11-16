@@ -6,12 +6,14 @@ from typing import Any
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QFileDialog,
     QFormLayout,
     QFrame,
     QHBoxLayout,
     QHeaderView,
+    QLabel,
     QLineEdit,
     QPushButton,
     QSizePolicy,
@@ -65,6 +67,32 @@ class NewProjectDialog(QDialog):
         file_row.addWidget(choose_file_btn)
         form.addRow("Import:", file_row)  # Add everything to form
 
+        # Column mapping (shown if "author" or "text" is missing from imported file)
+        self.mapping_box = QWidget()
+
+        mapping_vlayout = QVBoxLayout(self.mapping_box)  # Layout to hold the warning label and the selection combos
+        mapping_vlayout.setContentsMargins(0, 0, 0, 0)
+        column_warning = QLabel(
+            "It looks like this file is missing an 'author' or 'text' column. Please select columns to convert:"
+        )
+        column_warning.setStyleSheet("color: #d32f2f;")
+        mapping_vlayout.addWidget(column_warning)
+
+        map_layout = QHBoxLayout()  # Holds the selection combos
+        map_layout.setContentsMargins(0, 0, 0, 0)
+        self.author_combo = QComboBox()
+        self.text_combo = QComboBox()
+        self.author_combo.currentTextChanged.connect(self.validate_form)
+        self.text_combo.currentTextChanged.connect(self.validate_form)
+        map_layout.addWidget(QLabel("Author column:"))
+        map_layout.addWidget(self.author_combo, stretch=1)
+        map_layout.addWidget(QLabel("Text column:"))
+        map_layout.addWidget(self.text_combo, stretch=1)
+        mapping_vlayout.addLayout(map_layout)
+
+        self.mapping_box.hide()
+        layout.addWidget(self.mapping_box)
+
         # Add a separation line in betwen the form and the file preview
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
@@ -95,8 +123,9 @@ class NewProjectDialog(QDialog):
         """Enable Create Project button only when project name and file are valid."""
         has_name = bool(self.project_name.text().strip())
         has_file = bool(self.file_name.text().strip())
+        cols_different = self.text_combo.currentText() != self.author_combo.currentText()
 
-        self.create_btn.setEnabled(has_name and has_file)
+        self.create_btn.setEnabled(has_name and has_file and cols_different)
 
     @Slot()
     def on_choose_file_btn(self) -> None:
@@ -115,6 +144,18 @@ class NewProjectDialog(QDialog):
 
             # Update forms with selected file
             self.file_name.setText(str(path))
+
+            # Display column mapping if necessary
+            _, cols = preview
+            for combo, target in ((self.author_combo, "author"), (self.text_combo, "text")):
+                combo.clear()
+                combo.addItems(cols)
+                if target in cols:
+                    combo.setCurrentText(target)
+
+            missing = any(c not in cols for c in ("author", "text"))
+            self.mapping_box.setVisible(missing)
+
             self.validate_form()
 
     @Slot()
@@ -132,8 +173,20 @@ class NewProjectDialog(QDialog):
         source_file = Path(self.file_name.text())
         project = Project.create(project_dir=project_dir)
 
+        author_col = self.author_combo.currentText()
+        text_col = self.text_combo.currentText()
+
+        def mapped_rows():
+            for row in read_file(source_file):
+                if author_col != "author":
+                    row["author"] = row.pop(author_col)
+                if text_col != "text":
+                    row["text"] = row.pop(text_col)
+
+                yield row
+
         # Populate database
-        project.database.docs_table.add(read_file(source_file))
+        project.database.docs_table.add(mapped_rows())
 
         # Set the active project to the new project
         self.state.open_project(project_dir=project_dir)
