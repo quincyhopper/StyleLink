@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
         has_project = project is not None
         self.explore_menu.setVisible(has_project)
         self.search_menu.setVisible(has_project)
+        self.setWindowTitle(f"FRAASE - {project.project_dir.name}" if project else "FRAASE")
 
     @Slot()
     def on_new_project(self) -> None:
