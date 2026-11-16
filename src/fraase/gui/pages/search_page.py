@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -90,7 +92,6 @@ class DocumentSearchResult(BaseResult):
             "llr": self.llr,
             "id": self.id,
             "author": self.author,
-            "text": self.text,
             "metadata": self.metadata,
         }
 
@@ -393,6 +394,14 @@ class SearchResultsWidget(QWidget):
         layout = QVBoxLayout(self)
         splitter = QSplitter(Qt.Orientation.Horizontal, self)
 
+        # Button for exporting to csv
+        top_bar = QHBoxLayout()
+        top_bar.addStretch()
+        export_btn = QPushButton("Export to CSV...")
+        export_btn.clicked.connect(self._on_export_btn_clicked)
+        top_bar.addWidget(export_btn)
+        layout.addLayout(top_bar)
+
         def _pane(title: str, widget: QWidget) -> QGroupBox:
             """Helper function for grouping a pane with a title on top."""
             box = QGroupBox(title)
@@ -421,6 +430,14 @@ class SearchResultsWidget(QWidget):
         splitter.setStretchFactor(1, 2)
         splitter.setStretchFactor(2, 2)
         layout.addWidget(splitter)
+
+    def populate_results(self, query_labels: list[str], results: list[list[BaseResult]]) -> None:
+        """Fill the results widget with the results."""
+        self._results = results
+        self.query_list.clear()
+        self.query_list.addItems(query_labels)
+        if query_labels:
+            self.query_list.setCurrentRow(0)
 
     @Slot(int)
     def _on_query_selected(self, query_idx: int) -> None:
@@ -453,10 +470,27 @@ class SearchResultsWidget(QWidget):
         if 0 <= query_idx < len(self._results) and 0 <= row_idx < len(self._results[query_idx]):
             self.inspector.setText(self._results[query_idx][row_idx].to_inspector_text())
 
-    def populate_results(self, query_labels: list[str], results: list[list[BaseResult]]) -> None:
-        """Fill the results widget with the results."""
-        self._results = results
-        self.query_list.clear()
-        self.query_list.addItems(query_labels)
-        if query_labels:
-            self.query_list.setCurrentRow(0)
+    @Slot()
+    def _on_export_btn_clicked(self) -> None:
+        if not any(self._results):
+            return
+
+        file_str, _ = QFileDialog.getSaveFileName(self, "Export Search Results", "results.csv", "CSV Files (*csv)")
+
+        if not file_str:
+            return
+
+        rows = []
+        for q_idx, matches in enumerate(self._results):
+            query_label = self.query_list.item(q_idx).text()
+            for match in matches:
+                d = match.to_dict()
+                meta = d.pop("metadata", {})
+                rows.append({"query": query_label, **d, **meta})
+
+        fieldnames = list(dict.fromkeys(k for r in rows for k in r))
+
+        with open(file_str, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
