@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "faiss-cpu>=1.15.1",
+    "openpyxl>=3.1.5",
     "pyside6>=6.12.0",
     "scikit-learn>=1.9.1",
     "torch>=2.15.0",
