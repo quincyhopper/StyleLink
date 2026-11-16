@@ -134,7 +134,7 @@ class CentroidSearchResult(BaseResult):
         }
 
     def to_inspector_text(self) -> str:
-        snippets = "\n\n---\n\n".join("\n".join(t.splitlines()[:3])[:300] for t in self.sample_texts)
+        snippets = "...\n\n---\n\n".join("\n".join(t.splitlines()[:3])[:300] for t in self.sample_texts)
         return f"Author: {self.author} ({self.doc_count} documents)\n\n--- Sample Texts ---\n{snippets}"
 
 
@@ -421,7 +421,7 @@ class SearchResultsWidget(QWidget):
         splitter.addWidget(_pane("Match details", self.inspector))
 
         splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(1, 4)
         splitter.setStretchFactor(2, 2)
         layout.addWidget(splitter)
 
@@ -465,6 +465,11 @@ class SearchResultsWidget(QWidget):
                 self.matches_table.setItem(row_idx, col_idx, QTableWidgetItem(val))
 
         self.matches_table.selectRow(0)
+
+        self.matches_table.resizeColumnsToContents()
+        for col in range(self.matches_table.columnCount()):
+            if self.matches_table.columnWidth(col) > 300:
+                self.matches_table.setColumnWidth(col, 300)
 
     @Slot(int)
     def _on_match_selected(self, row_idx: int, *_) -> None:
