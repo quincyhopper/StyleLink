@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import shutil
 from enum import IntEnum
 from pathlib import Path
 
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QStackedWidget, QWidget
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QMessageBox, QStackedWidget, QWidget
 
 from fraase import __version__
 from fraase.gui.pages.explore_page import ExplorePage
@@ -84,6 +85,13 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         open_project_action = self.file_menu.addAction("Open")
         open_project_action.triggered.connect(self.on_open_project)
+
+        self.file_menu.addSeparator()
+
+        # Delete project
+        self.delete_project_action = self.file_menu.addAction("Delete project")
+        self.delete_project_action.triggered.connect(self.on_delete_project)
+
         self.file_menu.addSeparator()
 
         # The Explore and Search menus appear only when a project is active
@@ -116,6 +124,7 @@ class MainWindow(QMainWindow):
         self.explore_menu.setVisible(has_project)
         self.search_menu.setVisible(has_project)
         self.setWindowTitle(f"FRAASE - {project.project_dir.name}" if project else "FRAASE")
+        self.delete_project_action.setVisible(has_project)
 
     @Slot()
     def on_new_project(self) -> None:
@@ -130,3 +139,22 @@ class MainWindow(QMainWindow):
         project_dir = QFileDialog.getExistingDirectory(self, "Open a project folder", dir=str(PROJECT_DIR))
         if project_dir:
             self.state.open_project(Path(project_dir))
+
+    @Slot()
+    def on_delete_project(self) -> None:
+        """Delete the active project."""
+        project = self.state.active_project
+        if project is None:
+            return None
+
+        reply = QMessageBox.question(
+            self,
+            "Delete project",
+            f"Are you sure you want to permanently delete '{project.project_dir.name}'?",
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            project_dir = project.project_dir
+            self.state.close_project()
+            shutil.rmtree(project_dir)
+            self.navigate_to(PageID.HOME)
