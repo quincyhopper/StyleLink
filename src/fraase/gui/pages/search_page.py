@@ -320,6 +320,11 @@ class SearchPage(QWidget):
             for q_id in query_ids
         ]
 
+        # The following loop will run len(queries) * k times. To avoid querying the database for every single loop,
+        # we cache the database results for every ID.
+        row_cache: dict[int, Any] = {}
+        sample_cache: dict[str, list[str]] = {}
+
         # Convert results into BaseResult objects to pass to self.results_widget
         for q_idx in range(len(result_ids)):
             matches: list[BaseResult] = []
@@ -327,9 +332,14 @@ class SearchPage(QWidget):
                 if res_id == -1:
                     # FAISS returns -1 if it couldn't find K results, so just ignore it
                     continue
+                res_id = int(res_id)
 
-                # Get the database info for this match
-                row = conn.execute(f"SELECT * FROM {target_table} WHERE id = ?", (int(res_id),)).fetchone()
+                if res_id not in row_cache:
+                    # query and cache the row
+                    row_cache[res_id] = conn.execute(f"SELECT * FROM {target_table} WHERE id = ?", (res_id,)).fetchone()
+                row = row_cache[res_id]
+
+                # Load metadata
                 meta = json.loads(row["metadata"]) or "{}"
 
                 if exclude_self and query_table == "documents" and target_table == "centroids":
@@ -352,16 +362,19 @@ class SearchPage(QWidget):
                         )
                     )
                 else:
-                    sample_texts = [
-                        r["text"]
-                        for r in conn.execute("SELECT text FROM documents WHERE author = ? LIMIT 5", (row["author"],))
-                    ]
+                    author = row["author"]
+                    if author not in sample_cache:
+                        sample_cache[author] = [
+                            r["text"]
+                            for r in conn.execute("SELECT text FROM documents WHERE author = ? LIMIT 5", (author,))
+                        ]
+                    sample_texts = sample_cache[author]
                     matches.append(
                         CentroidSearchResult(
                             rank=rank,
                             score=float(score),
                             llr=float(llr),
-                            author=row["author"],
+                            author=author,
                             id=res_id,
                             doc_count=row["doc_count"],
                             sample_texts=sample_texts,
