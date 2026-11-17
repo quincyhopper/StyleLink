@@ -55,15 +55,22 @@ class HomePage(QStackedWidget):
 
     def init_empty_view(self) -> QWidget:
         """Initialise the empty view."""  # ruff:ignore[docstring-missing-returns]
-        label = QLabel("Please create a new project or open an existing one.")
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        page = QWidget()
+        layout = QVBoxLayout(page)
 
-        return label
+        layout.addWidget(self._make_guide())
+        layout.addStretch()
+        layout.setSpacing(16)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        return page
 
     def init_project_view(self) -> QWidget:
         """Initialise the project view."""  # ruff:ignore[docstring-missing-returns]
         page = QWidget()
         layout = QVBoxLayout(page)
+
+        guide = self._make_guide()
 
         # Sync section
         sync_box = QGroupBox("Project status")
@@ -99,18 +106,40 @@ class HomePage(QStackedWidget):
         search_layout = QVBoxLayout(search_box)
         search_info = QLabel(
             "Go to the Search page to perform a custom search, or press below "
-            "to compare all document styles against each other."
+            "to compare all document Styles against each other."
         )
         quick_search_btn = QPushButton("Quick search")
         quick_search_btn.clicked.connect(self.quick_search_requested.emit)
         search_layout.addWidget(search_info)
         search_layout.addWidget(quick_search_btn)
 
+        layout.addWidget(guide)
         layout.addWidget(sync_box)
         layout.addWidget(search_box)
         layout.addStretch()
+        layout.setSpacing(16)
+        layout.setContentsMargins(20, 20, 20, 20)
 
         return page
+
+    def _make_guide(self) -> QLabel:
+        box = QGroupBox("Getting started")
+        guide = QLabel(
+            "A **Style** is a numerical representation of a person's writing style. LAPSUM allows you to easily create and compare these Styles to potentially identify anonymous authors.\n"
+            "LAPSUM creates Styles for individual documents as well as Styles to represent an author as a whole. Think of an author Style as an aggregate of all their document Styles.\n\n"
+            "There are 3 search modes:\n"
+            "- **Document-to-Document**: find documents that are most similar to a chosen document.\n"
+            "- **Document-to-Author**: find authors that are most similar to individual documents.\n"
+            "- **Author-to-Author**: find authors that are most similar to each other.\n\n\n"
+            "The basic workflow looks like:\n"
+            "- **Create or open a project** from the **File** menu.\n"
+            "- Take a look at the data in the **Explore documents** tab.\n"
+            "- Perform a search in the **Search** tab."
+        )
+        guide.setTextFormat(Qt.TextFormat.MarkdownText)
+        guide.setWordWrap(True)
+        QVBoxLayout(box).addWidget(guide)
+        return box
 
     @Slot(Project)
     def on_project_changed(self, project: Project | None = None) -> None:
