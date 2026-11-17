@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import csv
 import json
+import sqlite3
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
+import numpy as np
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -114,7 +116,6 @@ class CentroidSearchResult(BaseResult):
     id: int
     author: str
     doc_count: int
-    sample_texts: list[str]  # A few lines of each of this author's texts
 
     HEADERS = ["Rank", "ID", "Author", "Doc count", "Score", "LLR", "Verbal"]
 
@@ -133,8 +134,8 @@ class CentroidSearchResult(BaseResult):
             "doc_count": self.doc_count,
         }
 
-    def to_inspector_text(self) -> str:
-        snippets = "...\n\n---\n\n".join("\n".join(t.splitlines()[:3])[:300] for t in self.sample_texts)
+    def to_inspector_text(self, sample_texts: list[str] = ()) -> str:
+        snippets = "...\n\n---\n\n".join("\n".join(t.splitlines()[:3])[:300] for t in sample_texts)
         return f"Author: {self.author} ({self.doc_count} documents)\n\n--- Sample Texts ---\n{snippets}"
 
 
@@ -235,7 +236,7 @@ class SearchPage(QWidget):
         self.empty_results_label = QLabel("Please run a search to view results.")
         self.empty_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.results_widget = SearchResultsWidget(self.results_stack)
+        self.results_widget = SearchResultsWidget(self.state, self.results_stack)
 
         self.results_stack.addWidget(self.empty_results_label)
         self.results_stack.addWidget(self.results_widget)
@@ -308,45 +309,81 @@ class SearchPage(QWidget):
                 query_doc_id=query_ids, k=k, exclude_self=exclude_self, allowed_ids=target_ids
             )
 
-        # Compute llrs
+        final_results, query_labels = self._to_results(
+            distances, result_ids, query_ids, k, exclude_self, query_table, target_table
+        )
+
+        self.results_widget.populate_results(query_labels, final_results)
+
+    def _to_results(
+        self,
+        distances: np.ndarray,
+        result_ids: np.ndarray,
+        query_ids: list[int],
+        k: int,
+        exclude_self: bool,
+        query_table: str,
+        target_table: str,
+    ) -> tuple[list[list[BaseResult]], list[str]]:
+        """Convert the result of a vector search into BaseResult objects.
+
+        Args:
+            distances: distances from FAISS.
+            result_ids: target IDs corresponding to the distances.
+            query_ids: IDs of all query documents/authors.
+            k: number of matches to find.
+            exclude_self: if True, query author is excluded from results.
+            query_table: name of the query table.
+            target_table: name of the target table.
+
+        Returns:
+            results: list of lists of BaseResult objects.
+            query_labels: formatted strings to display the query author.
+        """
+        conn = self.state.active_project.database.conn
+
+        def _fetch_rows_by_id(conn: sqlite3.Connection, table: str, cols: str, ids: list[int]) -> dict[int, Any]:
+            rows = {}
+            max_params = 32766  # Max parameters sqlite3 >=3.32.0
+            for i in range(0, len(ids), max_params):
+                chunk = ids[i : i + max_params]
+                placeholders = ",".join("?" * len(chunk))
+                for r in conn.execute(f"SELECT {cols} FROM {table} WHERE id IN ({placeholders})", chunk):
+                    # r is sqlite3.Row object allowing us to access column names via indexing
+                    rows[r["id"]] = r
+
+            return rows
+
+        # Get the IDs and columns for the query authors
+        query_author_map = _fetch_rows_by_id(conn, query_table, "id, author", query_ids)  # id: sqlite3.Row (id, author)
+        query_authors = [query_author_map[q_id]["author"] for q_id in query_ids]
+
+        # Get all unique result IDs - we will need to query the database to fill the results table for these documents/authors
+        needed_ids = [int(i) for i in np.unique(result_ids) if i != -1]
+
+        # Build a map of all the columns for each of the needed result ids
+        row_cache = _fetch_rows_by_id(conn, target_table, "*", needed_ids)
+
+        # Compute LLRs
         llrs = self.calibrator.compute_llr(distances)
 
-        conn = self.state.active_project.database.conn
+        # Build the results objects
         final_results: list[list[BaseResult]] = []
-
-        # Get list of query author names
-        query_authors = [
-            conn.execute(f"SELECT author FROM {query_table} WHERE id = ?", (q_id,)).fetchone()["author"]
-            for q_id in query_ids
-        ]
-
-        # The following loop will run len(queries) * k times. To avoid querying the database for every single loop,
-        # we cache the database results for every ID.
-        row_cache: dict[int, Any] = {}
-        sample_cache: dict[str, list[str]] = {}
-
-        # Convert results into BaseResult objects to pass to self.results_widget
         for q_idx in range(len(result_ids)):
             matches: list[BaseResult] = []
+
             for res_id, score, llr in zip(result_ids[q_idx], distances[q_idx], llrs[q_idx]):
                 if res_id == -1:
-                    # FAISS returns -1 if it couldn't find K results, so just ignore it
                     continue
+
                 res_id = int(res_id)
-
-                if res_id not in row_cache:
-                    # query and cache the row
-                    row_cache[res_id] = conn.execute(f"SELECT * FROM {target_table} WHERE id = ?", (res_id,)).fetchone()
                 row = row_cache[res_id]
-
-                # Load metadata
                 meta = json.loads(row["metadata"]) or "{}"
 
                 if exclude_self and query_table == "documents" and target_table == "centroids":
                     if row["author"] == query_authors[q_idx]:
                         continue
 
-                # Current rank updates dynamically based on the number of matches we have accumulated
                 rank = len(matches) + 1
 
                 if target_table == "documents":
@@ -356,41 +393,31 @@ class SearchPage(QWidget):
                             score=float(score),
                             llr=float(llr),
                             author=row["author"],
-                            id=int(res_id),
+                            id=res_id,
                             text=row["text"],
                             metadata=meta,
                         )
                     )
                 else:
-                    author = row["author"]
-                    if author not in sample_cache:
-                        sample_cache[author] = [
-                            r["text"]
-                            for r in conn.execute("SELECT text FROM documents WHERE author = ? LIMIT 5", (author,))
-                        ]
-                    sample_texts = sample_cache[author]
                     matches.append(
                         CentroidSearchResult(
                             rank=rank,
                             score=float(score),
                             llr=float(llr),
-                            author=author,
+                            author=row["author"],
                             id=res_id,
                             doc_count=row["doc_count"],
-                            sample_texts=sample_texts,
                         )
                     )
 
                 if len(matches) == k:
-                    # No need to build more results if we already have K results
                     break
 
             final_results.append(matches)
 
-        # Get visual representation of query authors
         query_labels = [f"ID #{id} ({author})" for id, author in zip(query_ids, query_authors)]
 
-        self.results_widget.populate_results(query_labels, final_results)
+        return final_results, query_labels
 
 
 class SearchResultsWidget(QWidget):
@@ -400,8 +427,9 @@ class SearchResultsWidget(QWidget):
     For each query text, the k results are shown in the central results box
     """
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, state: AppState, parent: QWidget | None = None):
         super().__init__(parent)
+        self.state = state
         self._results: list[list[BaseResult]] = []  # List for every query, k sublists
         self._build_ui()
 
@@ -487,8 +515,20 @@ class SearchResultsWidget(QWidget):
     @Slot(int)
     def _on_match_selected(self, row_idx: int, *_) -> None:
         query_idx = self.query_list.currentRow()
-        if 0 <= query_idx < len(self._results) and 0 <= row_idx < len(self._results[query_idx]):
-            self.inspector.setText(self._results[query_idx][row_idx].to_inspector_text())
+        if not (0 <= query_idx < len(self._results) and 0 <= row_idx < len(self._results[query_idx])):
+            return
+
+        match = self._results[query_idx][row_idx]
+        if isinstance(match, CentroidSearchResult) and self.state.active_project:
+            texts = [
+                r["text"]
+                for r in self.state.active_project.database.conn.execute(
+                    "SELECT text FROM documents WHERE author = ? LIMIT 5", (match.author,)
+                )
+            ]
+            self.inspector.setText(match.to_inspector_text(texts))
+        else:
+            self.inspector.setText(match.to_inspector_text())
 
     @Slot()
     def _on_export_btn_clicked(self) -> None:

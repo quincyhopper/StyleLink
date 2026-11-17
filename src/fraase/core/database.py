@@ -80,6 +80,7 @@ class Database:
                 cursor.execute(pragma)
 
         cursor.execute(CREATE_DOCUMENTS_TABLE_SQL)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_author ON documents(author);")
         cursor.execute(CREATE_CENTROIDS_TABLE_SQL)
         self._conn.commit()
 
