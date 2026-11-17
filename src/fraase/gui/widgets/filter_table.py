@@ -316,7 +316,9 @@ class SqlFilterTable(QWidget):
 
         where_clause, params = self._current_query()
         cols = ", ".join([*self.core_fields, "metadata"])
-        sql = f"SELECT {cols} FROM {self.table_name} {where_clause} LIMIT 1000"
+        sql = (
+            f"SELECT {cols} FROM {self.table_name} {where_clause} LIMIT 1000"  # 1000 so large datasets don't slow down
+        )
 
         rows = []
         for r in self.db.conn.execute(sql, params):
@@ -325,8 +327,17 @@ class SqlFilterTable(QWidget):
             rows.append(d)
 
         self.model.set_data(rows, self.core_fields, self.meta_keys)
-        self.count_lbl.setText(f"{len(rows):,} {'authors' if self.table_name == 'centroids' else self.table_name}")
-        self.radio_all.setText(f"All filtered rows ({len(rows)})")
+
+        # Get total count of documents
+        total_count = self.db.conn.execute(f"SELECT COUNT(*) FROM {self.table_name} {where_clause}", params).fetchone()[
+            0
+        ]
+
+        # Format total count but also say how many rows are being displayed
+        name = "authors" if self.table_name == "centroids" else self.table_name
+        suffix = f" (showing first {len(rows):,})" if total_count > len(rows) else ""
+        self.count_lbl.setText(f"{total_count:,} {name}{suffix}")
+        self.radio_all.setText(f"All filtered rows ({total_count:,})")
         self._on_row_selected()
         self.selection_changed.emit()
 
