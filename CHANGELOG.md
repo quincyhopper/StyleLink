@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-11-17
+
+### Added
+- Cancel button for embedding generation.
+- "Getting started" guide on Home page.
+- Installation instructions in `README.md`.
+
+### Changed
+- Significantly improved search speed by batching Sqlite lookups and lazy-loading centroid sample texts.
+
+### Fixed
+- Display true row count in filter tables when more than 1,000 rows match.
+
 ## [0.2.0] - 2026-11-16
 
 ### Added
