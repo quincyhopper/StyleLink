@@ -114,6 +114,7 @@ class STAR:
         texts: Sequence[str],
         batch_size: int = 32,
         progress_callback: Callable[[int, int], None] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> np.ndarray:
         """Generate normalised embeddings for input texts.
 
@@ -123,13 +124,15 @@ class STAR:
             texts: List of text strings.
             batch_size: Batch size for model inference.
             progress_callback: Optional callback receiving (processed_count, total_count).
+            cancel_check: If True, the user has requested to cancel the embedding.
 
         Returns:
             2D NumPy array of shape (N, dimension) and dtype float32.
 
         Raises:
             ValueError: if texts argument is empty.
-        """  # ruff:ignore[missing-blank-line-after-summary]
+            InterruptedError: if embedding is cancelled.
+        """
         if not texts:
             raise ValueError("Texts must not be empty.")
 
@@ -142,6 +145,8 @@ class STAR:
             progress_callback(0, total)
 
         for start_idx in range(0, total, batch_size):
+            if cancel_check and cancel_check():
+                raise InterruptedError("Embedding cancelled.")
             batch_texts = list(texts[start_idx : start_idx + batch_size])
 
             # Tokenise into 512-token chunks

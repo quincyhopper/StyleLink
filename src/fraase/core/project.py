@@ -84,7 +84,11 @@ class Project:
         author_count = self.database.conn.execute("SELECT COUNT(DISTINCT author) FROM documents").fetchone()[0]
         return self.database.docs_table.count() == self.doc_index.ntotal and author_count == self.centroid_index.ntotal
 
-    def sync_embeddings(self, progress_callback: Callable[[int, int], None] | None = None) -> None:
+    def sync_embeddings(
+        self,
+        progress_callback: Callable[[int, int], None] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> None:
         """Embed any documents that are NOT already in the document index. If a dataset has just been imported, this will simply embed the entire dataset."""
         existing_ids = self.doc_index.ids
         missing = [row for row in self.database.docs_table.get_all() if row["id"] not in existing_ids]
@@ -93,9 +97,14 @@ class Project:
             ids = [row["id"] for row in missing]
             texts = [row["text"] for row in missing]
 
-            # Embed and add to indexes
-            embeddings = self.embedder.embed_texts(texts=texts, progress_callback=progress_callback)
-            self.embedder.release()
+            try:
+                embeddings = self.embedder.embed_texts(
+                    texts=texts, progress_callback=progress_callback, cancel_check=cancel_check
+                )
+            finally:
+                # Release model even if embedding is cancelled
+                self.embedder.release()
+
             self.doc_index.add(embeddings, ids)
             self.doc_index.save(self.project_dir / self.DOC_INDEX_FILENAME)
 

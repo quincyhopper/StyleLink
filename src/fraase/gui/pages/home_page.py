@@ -82,8 +82,12 @@ class HomePage(QStackedWidget):
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimumWidth(260)
 
+        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.clicked.connect(self._on_cancel_clicked)
+
         prog_layout.addWidget(self.progress_label)
         prog_layout.addWidget(self.progress_bar, stretch=1)
+        prog_layout.addWidget(self.cancel_btn)
         self.progress_frame.setVisible(False)
 
         sync_layout.addWidget(self.sync_label)
@@ -113,6 +117,12 @@ class HomePage(QStackedWidget):
         """Set current widget in page stack according to active project status."""
         self.setCurrentWidget(self.empty_view if project is None else self.project_view)
         self.update_sync_status()
+
+    @Slot()
+    def _on_cancel_clicked(self) -> None:
+        self.cancel_btn.setEnabled(False)
+        self.progress_label.setText("Cancelling...")
+        self.worker.requestInterruption()
 
     def on_embed_btn_clicked(self) -> None:
         """Syncs embeddings."""
@@ -180,4 +190,9 @@ class EmbedWorker(QThread):
         self.project = project
 
     def run(self) -> None:
-        self.project.sync_embeddings(progress_callback=self.progress.emit)
+        try:
+            self.project.sync_embeddings(
+                progress_callback=self.progress.emit, cancel_check=self.isInterruptionRequested
+            )
+        except InterruptedError:
+            pass
