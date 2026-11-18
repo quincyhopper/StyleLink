@@ -18,6 +18,9 @@ from PySide6.QtWidgets import (
 from fraase.core.project import Project
 from fraase.gui.state import AppState
 
+# See search_page.py
+ADVANCED_SEARCH = False
+
 
 def format_eta(seconds: float) -> str:
     """Convert seconds ETA to human-readable string."""
@@ -112,6 +115,8 @@ class HomePage(QStackedWidget):
         quick_search_btn.clicked.connect(self.quick_search_requested.emit)
         search_layout.addWidget(search_info)
         search_layout.addWidget(quick_search_btn)
+
+        search_box.setVisible(ADVANCED_SEARCH)  # see search_page.py
 
         layout.addWidget(guide)
         layout.addWidget(sync_box)

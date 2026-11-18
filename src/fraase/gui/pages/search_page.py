@@ -34,6 +34,11 @@ from fraase.embedding.calibrator import LLRCalibrator, llr_to_verbal
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
 
+# This flag will remove the Search Items and Comparison Items from the Search page, as well as removing the exclude_self
+# option (this will just default to exclude_self if query_table == target_table). This allows us to simplify the app
+# for the very first users without completely removing these features from the code.
+ADVANCED_SEARCH = False
+
 # Maps the search mode to the query and target tables
 MODES_MAP = {
     "Document-to-Document": ("documents", "documents"),
@@ -199,9 +204,12 @@ class SearchPage(QWidget):
         param_row.addWidget(self.k_spinbox)
 
         self.exclude_checkbox = QCheckBox("Exclude query author")
-        self.exclude_checkbox.setChecked(False)
+        self.exclude_checkbox.setChecked(True)  # Prototype version: doc2doc starts ticked
         self.exclude_checkbox.setToolTip("If this is checked, the query author won't appear in the results.")
         param_row.addWidget(self.exclude_checkbox)
+
+        # Disable exclude_self for prototype version
+        self.exclude_checkbox.setVisible(ADVANCED_SEARCH)
 
         param_row.addStretch(1)
 
@@ -224,6 +232,12 @@ class SearchPage(QWidget):
         self.steps_tab.addTab(self.query_table, "Search Items")
         self.steps_tab.addTab(self.target_table, "Comparison Items")
         self.steps_tab.addTab(self._build_results_tab(), "Results")
+
+        # Prototype version: steps tabs are removed
+        self.steps_tab.setTabVisible(0, ADVANCED_SEARCH)
+        self.steps_tab.setTabVisible(1, ADVANCED_SEARCH)
+        if not ADVANCED_SEARCH:
+            self.steps_tab.tabBar().hide()
 
         layout.addWidget(self.steps_tab)
 
@@ -257,6 +271,9 @@ class SearchPage(QWidget):
         query_table, target_table = MODES_MAP[mode]
         self.query_table.set_table(query_table)
         self.target_table.set_table(target_table)
+
+        # Prototype version: Exclude self is automatically checked unless Document-to-Author
+        self.exclude_checkbox.setChecked(query_table == target_table)
 
     @Slot()
     def _on_search_btn_clicked(self) -> None:
