@@ -4,14 +4,30 @@ from pathlib import Path
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-DEFAULT_MODEL_PATH = Path(__file__).resolve().parent / "logreg.pkl"
+CALIBRATOR_DIR = Path(__file__).resolve().parent
+
+CALIBRATORS = {
+    "General": CALIBRATOR_DIR / "general_calibrator.pkl",
+    "Forum posts": CALIBRATOR_DIR / "forum_calibrator.pkl",
+    "Chat logs": CALIBRATOR_DIR / "chat_calibrator.pkl",
+}
 
 
 class LLRCalibrator:
     """Class for Logistic Regression used for computing log likelihood ratios (LLR)."""
 
-    def __init__(self, model_path: Path | str = DEFAULT_MODEL_PATH) -> None:
-        with open(model_path, "rb") as f:
+    def __init__(self, name: str = "General") -> None:
+        """Initialise the calibrator model used for turning cosine similarity scores into LLRs.
+
+        Args:
+           name (str): the name of the calibration model to use.
+
+        Raises:
+            ValueError: if uknown name parameter is passed.
+        """
+        if name not in CALIBRATORS:
+            raise ValueError(f"Uknown calibrator: {name}. Choose from {list(CALIBRATORS)}")
+        with open(CALIBRATORS[name], "rb") as f:
             self.model: LogisticRegression = pickle.load(f)
 
     def compute_llr(self, scores: np.ndarray) -> np.ndarray:
@@ -48,26 +64,29 @@ def llr_to_verbal(llr: float) -> str:
 
     Returns:
         A string describing the degree of support for each hypothesis.
+
+    Raises:
+        TypeError: if llr is None.
     """
-    if llr > 4:
-        return "Extremely strong support for Hp."
-    elif llr <= 4 and llr >= 3:
-        return "Very strong support for Hp."
-    elif llr < 3 and llr >= 2:
-        return "Strong support for Hp."
-    elif llr < 2 and llr >= 1:
-        return "Moderate support for Hp."
-    elif llr < 1 and llr > 0:
-        return "Weak support for Hp."
-    elif llr == 0:
-        return "Hp as likely as Hd."
-    elif llr < 0 and llr >= -1:
-        return "Weak support for Hd."
-    elif llr < -1 and llr >= -2:
-        return "Moderate support for Hd."
-    elif llr < -2 and llr >= -3:
-        return "Strong support for Hd."
-    elif llr < -3 and llr >= -4:
-        return "Very strong support for Hd."
-    elif llr < -4:
-        return "Extremely strong support for Hd."
+    if llr is None:
+        raise TypeError("Invalid llr.")
+
+    mag = abs(llr)
+    if mag < 0.1:
+        return "Evidence is inconclusive."
+
+    if mag > 4:
+        strength = "Extremely strong"
+    elif mag >= 3:
+        strength = "Very strong"
+    elif mag >= 2:
+        strength = "Strong"
+    elif mag >= 1:
+        strength = "Moderate"
+    elif mag >= 0.5:
+        strength = "Weak"
+    else:
+        strength = "Very weak"
+
+    hypothesis = "Same Person" if llr > 0 else "Different People"
+    return f"{strength} support for {hypothesis}"

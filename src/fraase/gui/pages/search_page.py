@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from fraase.embedding.calibrator import LLRCalibrator, llr_to_verbal
+from fraase.embedding.calibrator import CALIBRATORS, LLRCalibrator, llr_to_verbal
 from fraase.gui.state import AppState
 from fraase.gui.widgets.filter_table import SqlFilterTable
 
@@ -161,7 +161,6 @@ class SearchPage(QWidget):
     def __init__(self, state: AppState, parent: QWidget) -> None:
         super().__init__(parent)
         self.state = state
-        self.calibrator = LLRCalibrator()
         self._build_ui()
 
         # Update the filter tables on initialisation or if project is changed
@@ -210,6 +209,14 @@ class SearchPage(QWidget):
 
         # Disable exclude_self for prototype version
         self.exclude_checkbox.setVisible(ADVANCED_SEARCH)
+
+        # Selector for calibration model
+        cal_label = QLabel("Text type: ")
+        cal_label.setStyleSheet("font-weight: bold;")
+        param_row.addWidget(cal_label)
+        self.calibrator_combo = QComboBox()
+        self.calibrator_combo.addItems(list(CALIBRATORS.keys()))
+        param_row.addWidget(self.calibrator_combo)
 
         param_row.addStretch(1)
 
@@ -382,6 +389,7 @@ class SearchPage(QWidget):
         row_cache = _fetch_rows_by_id(conn, target_table, "*", needed_ids)
 
         # Compute LLRs
+        self.calibrator = LLRCalibrator(name=self.calibrator_combo.currentText())
         llrs = self.calibrator.compute_llr(distances)
 
         # Build the results objects
