@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import multiprocessing
+import os
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
@@ -13,6 +16,7 @@ def main() -> int:
     Returns:
         exit code.
     """
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     app = QApplication()
     app.styleHints().setColorScheme(Qt.ColorScheme.Light)
     state = AppState()
@@ -24,4 +28,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    SystemExit(main())
+    multiprocessing.freeze_support()
+    raise SystemExit(main())
