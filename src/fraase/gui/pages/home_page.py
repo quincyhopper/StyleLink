@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from fraase.core.project import Project
+from fraase.embedding.star import MODEL_DIR
 from fraase.gui.state import AppState
 
 # See search_page.py
@@ -163,11 +164,19 @@ class HomePage(QStackedWidget):
         if self.state.active_project is None:
             return
 
+        # Not enabled by default so that cancel cannot be pressed during model download.
+        # This is immediately enabled if the embedding starts making progress (self.on_embed_progress),
+        # meaning that the model is in fact downloaded.
+        self.cancel_btn.setEnabled(False)
+
         self.embed_btn.setEnabled(False)
         self._embed_start = time.monotonic()
         self.progress_frame.setVisible(True)
-        self.progress_label.setText("Loading Style creator...")
-        self.progress_bar.setRange(0, 100)
+        if MODEL_DIR.exists():
+            self.progress_label.setText("Loading Style creator...")
+        else:
+            self.progress_label.setText("Downloading 1.3GB Style creator (this will only happen once).")
+        self.progress_bar.setRange(0, 0)
         self.progress_bar.setValue(0)
 
         self.worker = EmbedWorker(self.state.active_project, self)
@@ -180,13 +189,14 @@ class HomePage(QStackedWidget):
         self.progress_bar.setValue(processed)
 
         if processed == 0:
+            self.cancel_btn.setEnabled(True)
             self._embed_start = time.monotonic()
-            self.progress_label.setText(f"Embedding documents: 0 / {total:,}")
+            self.progress_label.setText(f"Creating Styles: 0 / {total:,}")
             return
 
         elapsed = time.monotonic() - self._embed_start
         eta_str = format_eta((elapsed / processed) * (total - processed))
-        self.progress_label.setText(f"Embedding documents: {processed:,} / {total:,} (~{eta_str} remaining)")
+        self.progress_label.setText(f"Creating Styles: {processed:,} / {total:,} (~{eta_str} remaining)")
 
     def on_embed_finished(self) -> None:
         self.progress_frame.setVisible(False)

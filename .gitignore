@@ -16,3 +16,6 @@ wheels/
 *.html
 *.csv
 *.xlsx
+
+# STAR model
+src/fraase/embedding/star_model

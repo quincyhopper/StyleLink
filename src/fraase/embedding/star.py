@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Callable, Sequence
 
 import numpy as np
+
+MODEL_DIR = Path(__file__).resolve().parent / "star_model"
 
 
 def detect_best_device() -> str:
@@ -30,62 +33,35 @@ class STAR:
     """Class for the STAR embedding model."""
 
     def __init__(self) -> None:
-        self.model_path = "AIDA-UPM/star"
-        self.tokenizer_path = "roberta-large"
         self.device = detect_best_device()
 
         self._model = None
         self._tokenizer = None
-
-    def is_cached_locally(self) -> bool:
-        """Check whether the STAR model and RoBERTA-large tokenizer exist in the local cache.
-
-        Returns:
-            True if both found in cache, False otherwise.
-        """
-        if self._model is not None and self._tokenizer is not None:
-            return True
-
-        # Import function to check the cache, catching import error
-        try:
-            from huggingface_hub import try_to_load_from_cache
-        except ImportError:
-            return False
-
-        # Check the model is cached
-        cached_bin = try_to_load_from_cache(repo_id=self.model_path, filename="pytorch_model.bin")
-        model_cached = isinstance(cached_bin, str)
-
-        # Check the tokenizer is cached
-        cached_tokenizer = try_to_load_from_cache(repo_id=self.tokenizer_path, filename="tokenizer.json")
-        cached_vocab = try_to_load_from_cache(repo_id=self.tokenizer_path, filename="vocab.json")
-        tokenizer_cached = isinstance(cached_tokenizer, str) or isinstance(cached_vocab, str)
-
-        return bool(model_cached and tokenizer_cached)
 
     def load_components(self) -> None:
         """Load the tokenizer and model on device."""
         if self._model is not None and self._tokenizer is not None:
             return
 
-        # AIDA-UPM/star only has pytorch_model.bin and no .safetensors file. As a result, HuggingFace
-        # spawns a background thread (Threat-auto_conversion) to query the Hub, ignoring local_files_only.
-        # Prevent this with environment variables:
-        os.environ.setdefault("DISABLE_SAFETENSORS_CONVERSION", "1")
-        os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
-
         from transformers import AutoModel, AutoTokenizer
 
-        cached = self.is_cached_locally()
+        # The packaged app bundles already include MODEL_DIR. For git clones, star_model is ignored because it's ~1.3GB,
+        # so we download and save it on the first run.
+        if not MODEL_DIR.exists():
+            # To avoid leaving a duplicate copy in ~/.cache/hugginface/hub/, cache in a temporary dir that is eventually deteted.
+            import tempfile
 
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.tokenizer_path, local_files_only=cached
-        )
+            # AIDA-UPM/star only has pytorch_model.bin and no .safetensors file. As a result, HuggingFace
+            # spawns a background thread (Threat-auto_conversion) that tries to download a second model.safetensors
+            # copy into tmp. When the `with` block finishes and deletes `tmp`, the background thread is still mid-download
+            # so we must disable this safetensors conversion
+            os.environ.setdefault("DISABLE_SAFETENSORS_CONVERSION", "1")
+            with tempfile.TemporaryDirectory() as tmp:
+                AutoTokenizer.from_pretrained("roberta-large", cache_dir=tmp).save_pretrained(MODEL_DIR)
+                AutoModel.from_pretrained("AIDA-UPM/star", cache_dir=tmp).save_pretrained(MODEL_DIR)
 
-        self._model = AutoModel.from_pretrained(
-            pretrained_model_name_or_path=self.model_path, local_files_only=cached
-        ).to(self.device)
-
+        self._tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
+        self._model = AutoModel.from_pretrained(MODEL_DIR, local_files_only=True).to(self.device)
         self._model.eval()
 
     def release(self) -> None:
@@ -137,6 +113,10 @@ class STAR:
             raise ValueError("Texts must not be empty.")
 
         self.load_components()
+        if cancel_check and cancel_check():
+            # If user cancels during model download, the model will download but the actual embedding will be stopped
+            raise InterruptedError("Embedding cancelled")
+
         import torch
 
         all_embeddings: list[np.ndarray] = []
