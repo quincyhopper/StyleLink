@@ -25,6 +25,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "pyinstaller>=6.22.3",
     "pyinstrument>=5.1.3",
     "pytest>=9.2.0",
 ]
