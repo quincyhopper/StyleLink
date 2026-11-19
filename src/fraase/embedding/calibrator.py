@@ -75,5 +75,5 @@ def llr_to_verbal(llr: float) -> str:
     else:
         strength = "Very weak"
 
-    hypothesis = "Same Person" if llr > 0 else "Different People"
+    hypothesis = "Same Person" if llr > 0 else "Different Person"
     return f"{strength} support for {hypothesis}"
