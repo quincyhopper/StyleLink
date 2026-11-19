@@ -96,10 +96,11 @@ class DocumentSearchResult(BaseResult):
     def to_dict(self) -> dict[str, Any]:
         return {
             "rank": self.rank,
-            "score": self.score,
-            "llr": self.llr,
             "id": self.id,
             "author": self.author,
+            "score": self.score,
+            "llr": self.llr,
+            "verbal": llr_to_verbal(self.llr),
             "metadata": self.metadata,
         }
 
@@ -132,10 +133,11 @@ class CentroidSearchResult(BaseResult):
     def to_dict(self) -> dict[str, Any]:
         return {
             "rank": self.rank,
-            "score": self.score,
-            "llr": self.llr,
             "id": self.id,
             "author": self.author,
+            "score": self.score,
+            "llr": self.llr,
+            "verbal": llr_to_verbal(self.llr),
             "doc_count": self.doc_count,
         }
 
