@@ -9,8 +9,8 @@ A simple GUI for authorship attribution and verification using neural authorship
 
 ### Setup
 ```bash
-git clone https://github.com/quincyhopper/LAPSUM.git
-cd LAPSUM
+git clone https://github.com/quincyhopper/StyleLink.git
+cd StyleLink
 uv sync
 ```
 
