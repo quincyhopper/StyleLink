@@ -1,5 +1,5 @@
 [project]
-name = "fraase"
+name = "stylelink"
 version = "0.3.0"
 description = "Add your description here"
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fraase = "fraase.gui.app:main"
+stylelink = "stylelink.gui.app:main"
 
 [build-system]
 requires = ["uv_build>=0.10.12,<0.11.0"]

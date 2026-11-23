@@ -4,11 +4,13 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QSettings, QStandardPaths, Signal
 
-from fraase.core.project import Project
-from fraase.embedding.star import STAR
+from stylelink.core.project import Project
+from stylelink.embedding.star import STAR
 
 PROJECT_DIR = (
-    Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation)) / "fraase" / "projects"
+    Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))
+    / "stylelink"
+    / "projects"
 )
 
 
@@ -21,7 +23,7 @@ class AppState(QObject):
 
     def __init__(self, settings: QSettings | None = None, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self.settings = settings or QSettings("Quincy Hopper", "FRAASE")
+        self.settings = settings or QSettings("Quincy Hopper", "StyleLink")
         self.active_project: Project | None = None
         self._embedder: STAR | None = None
 

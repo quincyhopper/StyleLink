@@ -23,9 +23,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from fraase.core.project import Project
-from fraase.gui.state import PROJECT_DIR, AppState
-from fraase.utils.file import preview_file, read_file
+from stylelink.core.project import Project
+from stylelink.gui.state import PROJECT_DIR, AppState
+from stylelink.utils.file import preview_file, read_file
 
 
 class NewProjectDialog(QDialog):

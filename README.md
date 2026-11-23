@@ -1,5 +1,5 @@
-# LAPSUM
-Language Profiling System for Username Matching
+# StyleLink
+A simple GUI for authorship attribution and verification using neural authorship representations.
 
 ## Installation
 
@@ -16,5 +16,5 @@ uv sync
 
 ### Run
 ```
-uv run fraase
+uv run stylelink
 ```

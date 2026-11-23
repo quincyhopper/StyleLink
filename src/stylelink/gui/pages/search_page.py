@@ -30,9 +30,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from fraase.embedding.calibrator import CALIBRATORS, LLRCalibrator, llr_to_verbal
-from fraase.gui.state import AppState
-from fraase.gui.widgets.filter_table import SqlFilterTable
+from stylelink.embedding.calibrator import CALIBRATORS, LLRCalibrator, llr_to_verbal
+from stylelink.gui.state import AppState
+from stylelink.gui.widgets.filter_table import SqlFilterTable
 
 # This flag will remove the Search Items and Comparison Items from the Search page, as well as removing the exclude_self
 # option (this will just default to exclude_self if query_table == target_table). This allows us to simplify the app
@@ -305,7 +305,7 @@ class SearchPage(QWidget):
         # A few checks before we begin the search
         if not self.state.active_project.is_synced:
             raise RuntimeError(
-                "Not all documents/authors have Styles. Please run Create Styles on the Home Page first."
+                "Not all documents/authors have Style Markers. Please run Create Style Markers on the Home Page first."
             )
         if not query_ids:
             raise ValueError("No search items selected. Please select at least one in the Search Items tab.")

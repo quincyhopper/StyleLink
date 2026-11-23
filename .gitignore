@@ -18,4 +18,4 @@ wheels/
 *.xlsx
 
 # STAR model
-src/fraase/embedding/star_model
+src/stylelink/embedding/star_model

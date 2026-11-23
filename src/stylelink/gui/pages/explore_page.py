@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from fraase.gui.state import AppState
-from fraase.gui.widgets.filter_table import SqlFilterTable
+from stylelink.gui.state import AppState
+from stylelink.gui.widgets.filter_table import SqlFilterTable
 
 
 class ExplorePage(QWidget):

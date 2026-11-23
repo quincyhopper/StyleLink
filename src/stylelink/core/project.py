@@ -5,9 +5,9 @@ from typing import Callable
 
 import numpy as np
 
-from fraase.core.database import Database
-from fraase.core.index import VectorIndex
-from fraase.embedding.star import STAR
+from stylelink.core.database import Database
+from stylelink.core.index import VectorIndex
+from stylelink.embedding.star import STAR
 
 
 class Project:

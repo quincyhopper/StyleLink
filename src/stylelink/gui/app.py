@@ -6,8 +6,8 @@ import os
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from fraase.gui.main_window import MainWindow
-from fraase.gui.state import AppState
+from stylelink.gui.main_window import MainWindow
+from stylelink.gui.state import AppState
 
 
 def main() -> int:

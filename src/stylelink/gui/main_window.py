@@ -7,12 +7,12 @@ from pathlib import Path
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QMessageBox, QStackedWidget, QWidget
 
-from fraase import __version__
-from fraase.gui.pages.explore_page import ExplorePage
-from fraase.gui.pages.home_page import HomePage
-from fraase.gui.pages.new_project_dialog import NewProjectDialog
-from fraase.gui.pages.search_page import SearchPage
-from fraase.gui.state import PROJECT_DIR, AppState
+from stylelink import __version__
+from stylelink.gui.pages.explore_page import ExplorePage
+from stylelink.gui.pages.home_page import HomePage
+from stylelink.gui.pages.new_project_dialog import NewProjectDialog
+from stylelink.gui.pages.search_page import SearchPage
+from stylelink.gui.state import PROJECT_DIR, AppState
 
 MENUBAR_STYLESHEET_PATH = Path(__file__).parent / "static" / "styles" / "menu_bar.qss"
 
@@ -26,12 +26,12 @@ class PageID(IntEnum):
 
 
 class MainWindow(QMainWindow):
-    """Primary desktop window for FRAASE."""
+    """Primary desktop window for StyleLink."""
 
     def __init__(self, state: AppState) -> None:
         super().__init__()
         self.showMaximized()  # Fit to fullscreen
-        self.setWindowTitle("FRAASE")
+        self.setWindowTitle("StyleLink")
 
         self.state = state
 
@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
 
     def build_status_bar(self) -> None:
         """Build the status bar responsible for indicating the current project and any other details."""
-        version_label = QLabel(text=f"FRAASE v{__version__}")
+        version_label = QLabel(text=f"v{__version__}")
         self.statusBar().addPermanentWidget(version_label)
 
     def navigate_to(self, page_id: PageID) -> None:
@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
         has_project = project is not None
         self.explore_menu.setVisible(has_project)
         self.search_menu.setVisible(has_project)
-        self.setWindowTitle(f"FRAASE - {project.project_dir.name}" if project else "FRAASE")
+        self.setWindowTitle(f"StyleLink - {project.project_dir.name}" if project else "StyleLink")
         self.delete_project_action.setVisible(has_project)
         self.add_dataset_action.setVisible(has_project)
 

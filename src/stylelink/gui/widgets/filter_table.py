@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from fraase.core.database import Database
+from stylelink.core.database import Database
 
 OPERATORS = {
     "=": ("{col} = ?", lambda v: v),
