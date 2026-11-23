@@ -132,6 +132,17 @@ class DocumentsTable:
     def get_ids_by_author(self, authors: Sequence[str]) -> list[int]:
         """Return the unique IDs of the given author names."""
 
+    def delete(self, ids: Sequence[int]) -> None:
+        """Delete documents with the given IDs from the documents table."""
+        if not ids:
+            return
+
+        with self._conn:
+            for i in range(0, len(ids), 32766):  # sqlite max params
+                chunk = ids[i : i + 32766]
+                placeholders = ",".join("?" * len(chunk))
+                self._conn.execute(f"DELETE FROM documents WHERE id IN ({placeholders})", chunk)
+
 
 class CentroidsTable:
     """Class for managing the centroids table of the main database."""

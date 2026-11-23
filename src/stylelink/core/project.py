@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence
 
 import numpy as np
 
@@ -140,3 +140,15 @@ class Project:
 
         self.centroid_index.add(np.vstack(centroid_vecs), centroid_ids)
         self.centroid_index.save(self.project_dir / self.CENTROID_INDEX_FILENAME)
+
+    def delete_documents(self, ids: Sequence[int]) -> None:
+        """Delete documents from SQLite and FAISS, then rebuild author centroids."""
+        if not ids:
+            return
+
+        self.database.docs_table.delete(ids)
+
+        if self.doc_index.ntotal > 0:
+            self.doc_index.remove(ids)
+            self.doc_index.save(self.project_dir / self.DOC_INDEX_FILENAME)
+            self.build_author_centroids()
