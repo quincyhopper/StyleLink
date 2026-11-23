@@ -23,7 +23,6 @@ class AppState(QObject):
 
     def __init__(self, settings: QSettings | None = None, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self.settings = settings or QSettings("Quincy Hopper", "StyleLink")
         self.active_project: Project | None = None
         self._embedder: STAR | None = None
 
