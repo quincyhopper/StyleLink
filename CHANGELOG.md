@@ -5,18 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2026-11-19
+## [0.3.0] - 2026-11-23
 
 ### Added
 - Calibrator selector dropdown on the Search page ("General", "Forum posts", and "Chat logs")
 - Verbal LLR interpretation column in exported CSV results.
 - PyInstaller packaging support for standalone desktop application bundles.
+- "Delete documents" button to Explore page
 
 ### Changed
 - Load the STAR model and tokenizer directly from local `star_model/` directory (with automatic first-run download for git clones).
 - Replaced pickled `scikit-learn` calibrator models with a JSON file containing the coefficients and intercepts (`calibrators.json`), removing the `scikit-learn` dependency.
 - Simplified the Search and Home pages by hiding advanced query/target filtering tabs, the "Exclude self" toggle and the "Quick Search" box. This may be added later on if it is needed.
 - Updated verbal LLR thresholds.
+- Name of project from FRAASE/LAPSUM to StyleLink
 
 ### Removed
 - `scikit-learn` runtime dependency.
