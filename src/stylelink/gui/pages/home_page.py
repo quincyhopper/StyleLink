@@ -81,7 +81,7 @@ class HomePage(QStackedWidget):
         sync_layout = QVBoxLayout(sync_box)
         self.sync_label = QLabel()
 
-        self.embed_btn = QPushButton("Create Style Markers")
+        self.embed_btn = QPushButton("Create Style Marks")
         self.embed_btn.clicked.connect(self.on_embed_btn_clicked)
 
         self.progress_frame = QFrame()
@@ -110,7 +110,7 @@ class HomePage(QStackedWidget):
         search_layout = QVBoxLayout(search_box)
         search_info = QLabel(
             "Go to the Search page to perform a custom search, or press below "
-            "to compare all document Style Markers against each other."
+            "to compare all document Style Marks against each other."
         )
         quick_search_btn = QPushButton("Quick search")
         quick_search_btn.clicked.connect(self.quick_search_requested.emit)
@@ -131,8 +131,8 @@ class HomePage(QStackedWidget):
     def _make_guide(self) -> QLabel:
         box = QGroupBox("Getting started")
         guide = QLabel(
-            "A **Style Marker** is a numerical representation of a person's writing style. StyleLink allows you to easily create and compare these Style Markers to potentially identify anonymous authors.\n"
-            "StyleLink creates Style Markers for individual documents as well as Style Markers to represent an author as a whole. Think of an author Style Marker as an aggregate of all their document Style Markers.\n\n"
+            "A **Style Mark** is a numerical representation of a person's writing style. StyleLink allows you to easily create and compare these Style Marks to potentially identify anonymous authors.\n"
+            "StyleLink creates Style Marks for individual documents as well as Style Marks to represent an author as a whole. Think of an author's Style Mark as an aggregate of all their document Style Marks.\n\n"
             "There are 3 search modes:\n"
             "- **Document-to-Document**: find documents that are most similar to a chosen document.\n"
             "- **Document-to-Author**: find authors that are most similar to individual documents.\n"
@@ -191,12 +191,12 @@ class HomePage(QStackedWidget):
         if processed == 0:
             self.cancel_btn.setEnabled(True)
             self._embed_start = time.monotonic()
-            self.progress_label.setText(f"Creating Style Markers: 0 / {total:,}")
+            self.progress_label.setText(f"Creating Style Marks: 0 / {total:,}")
             return
 
         elapsed = time.monotonic() - self._embed_start
         eta_str = format_eta((elapsed / processed) * (total - processed))
-        self.progress_label.setText(f"Creating Style Markers: {processed:,} / {total:,} (~{eta_str} remaining)")
+        self.progress_label.setText(f"Creating Style Marks: {processed:,} / {total:,} (~{eta_str} remaining)")
 
     def on_embed_finished(self) -> None:
         self.progress_frame.setVisible(False)
@@ -209,7 +209,7 @@ class HomePage(QStackedWidget):
             return
 
         if self.state.active_project.is_synced:
-            self.sync_label.setText("All documents and authors have Style Markers. Perform a search when ready!")
+            self.sync_label.setText("All documents and authors have Style Marks. Perform a search when ready!")
             self.sync_label.setStyleSheet("")  # Return to default colours
             self.embed_btn.setVisible(False)
         else:
@@ -219,7 +219,7 @@ class HomePage(QStackedWidget):
             indexed_docs = self.state.active_project.doc_index.ntotal
 
             self.sync_label.setText(
-                f"{indexed_docs}/{docs_total} documents are missing Style Markers. Create them with the button below:"
+                f"{indexed_docs}/{docs_total} documents are missing Style Marks. Create them with the button below:"
             )
             self.sync_label.setStyleSheet("color: #d32f2f;")
 

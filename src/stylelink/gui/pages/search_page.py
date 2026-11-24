@@ -305,7 +305,7 @@ class SearchPage(QWidget):
         # A few checks before we begin the search
         if not self.state.active_project.is_synced:
             raise RuntimeError(
-                "Not all documents/authors have Style Markers. Please run Create Style Markers on the Home Page first."
+                "Not all documents/authors have Style Marks. Please run Create Style Marks on the Home Page first."
             )
         if not query_ids:
             raise ValueError("No search items selected. Please select at least one in the Search Items tab.")
