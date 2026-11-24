@@ -1,0 +1,54 @@
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Download STAR model and tokenizer
+        run: |
+          uv run python -c "
+          import os
+          from pathlib import Path
+          from transformers import AutoModel, AutoTokenizer
+          os.environ['DISABLE_SAFETENSORS_CONVERSION'] = '1'
+          out = Path('src/stylelink/embedding/star_model')
+          AutoTokenizer.from_pretrained('roberta-large').save_pretrained(out)
+          AutoModel.from_pretrained('AIDA-UPM/star').save_pretrained(out)
+          "
+
+      - name: Build with PyInstaller
+        run: |
+          uv run pyinstaller `
+            --name StyleLink `
+            --windowed `
+            --onedir `
+            --noconfirm `
+            --exclude-module jedi `
+            --exclude-module tkinter `
+            --exclude-module zmq `
+            --exclude-module IPython `
+            --exclude-module pyinstrument `
+            --add-data "src/stylelink/gui/static/styles/menu_bar.qss:stylelink/gui/static/styles" `
+            --add-data "src/stylelink/embedding/calibrators.json:stylelink/embedding" `
+            --add-data "src/stylelink/embedding/star_model:stylelink/embedding/star_model" `
+            src/stylelink/gui/app.py
+
+      - name: Compile Windows Installer (Inno Setup)
+        run: iscc scripts/build/installer.iss
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: StyleLink-Windows-Setup
+          path: Output/StyleLink-Windows-Setup.exe
