@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verbal LLR interpretation column in exported CSV results.
 - PyInstaller packaging support for standalone desktop application bundles.
 - "Delete documents" button to Explore page
+- Scripts for macOS and Windows build
 
 ### Changed
 - Load the STAR model and tokenizer directly from local `star_model/` directory (with automatic first-run download for git clones).
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified the Search and Home pages by hiding advanced query/target filtering tabs, the "Exclude self" toggle and the "Quick Search" box. This may be added later on if it is needed.
 - Updated verbal LLR thresholds.
 - Name of project from FRAASE/LAPSUM to StyleLink
+- Spelling/grammar
 
 ### Removed
 - `scikit-learn` runtime dependency.
