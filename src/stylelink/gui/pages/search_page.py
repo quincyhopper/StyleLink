@@ -175,12 +175,38 @@ class SearchPage(QWidget):
 
     @Slot()
     def _on_search_btn_clicked(self) -> None:
+        project = self.state.active_project
+        query_ids = self.query_table.get_effective_ids()
+        target_ids = self.target_table.get_effective_ids()
+
+        if not project or not project.is_synced:
+            QMessageBox.warning(
+                self,
+                "Cannot run search",
+                "Not all documents/authors have Style Marks. Please run Create Style Marks on the Home Page first.",
+            )
+            return
+        if not query_ids:
+            QMessageBox.warning(
+                self,
+                "Cannot run search",
+                "No search items selected. Please select at least one in the Search Items tab.",
+            )
+            return
+        if not target_ids:
+            QMessageBox.warning(
+                self,
+                "Cannot run search",
+                "No comparison items selected. Please select at least one in the Comparison Items tab.",
+            )
+            return
+
         try:
             final_results, query_labels = run_search(
                 project=self.state.active_project,
                 mode=self.mode_combo.currentText(),
-                query_ids=self.query_table.get_effective_ids(),
-                target_ids=self.target_table.get_effective_ids(),
+                query_ids=query_ids,
+                target_ids=target_ids,
                 k=self.k_spinbox.value(),
                 exclude_self=self.exclude_checkbox.isChecked(),
                 calibrator_name=self.calibrator_combo.currentText(),

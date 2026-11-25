@@ -144,17 +144,14 @@ def run_search(
 
     Raises:
         RuntimeError: if project is not synced.
-        ValueError: if query/targets are mssing.
+        ValueError: if queyry/target ids are empty
     """
-    # A few checks before we begin the search
     if not project.is_synced:
-        raise RuntimeError(
-            "Not all documents/authors have Style Marks. Please run Create Style Marks on the Home Page first."
-        )
+        raise RuntimeError("Project embeddings and centroids are not synced with the database.")
     if not query_ids:
-        raise ValueError("No search items selected. Please select at least one in the Search Items tab.")
+        raise ValueError("query_ids cannot be empty.")
     if not target_ids:
-        raise ValueError("No comparison items selected. Please select at least one in the Comparison Items tab.")
+        raise ValueError("target_ids cannot be empty.")
 
     # Determine which FAISS indexes we need to use
     query_table, target_table = MODES_MAP[mode]
