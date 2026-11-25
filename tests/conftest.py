@@ -55,7 +55,7 @@ def mock_embedder(monkeypatch: pytest.MonkeyPatch):
 
             # Hash text so identical texts get same embedding
             seed = int.from_bytes(hashlib.sha256(text.encode("utf-8")).digest()[:4], "little")
-            vecs.append(make_unit_vectors(1, dim=2014, seed=seed)[0])
+            vecs.append(make_unit_vectors(1, dim=1024, seed=seed)[0])
 
             if progress_callback:
                 progress_callback(idx, total)
