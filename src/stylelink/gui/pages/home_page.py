@@ -219,7 +219,7 @@ class HomePage(QStackedWidget):
             indexed_docs = self.state.active_project.doc_index.ntotal
 
             self.sync_label.setText(
-                f"{indexed_docs}/{docs_total} documents are missing Style Marks. Create them with the button below:"
+                f"Only {indexed_docs}/{docs_total} documents have Style Marks. Create them with the button below:"
             )
             self.sync_label.setStyleSheet("color: #d32f2f;")
 
