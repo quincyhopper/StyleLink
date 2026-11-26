@@ -14,8 +14,11 @@ wheels/
 *.faiss
 *.db
 *.html
-# *.csv
+*.csv
 *.xlsx
 
 # STAR model
 src/stylelink/embedding/star_model
+
+# Sample data
+!data/sample.csv
