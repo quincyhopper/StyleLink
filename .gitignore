@@ -14,7 +14,7 @@ wheels/
 *.faiss
 *.db
 *.html
-*.csv
+# *.csv
 *.xlsx
 
 # STAR model
